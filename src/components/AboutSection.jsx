@@ -31,13 +31,10 @@ export const AboutSection = ({ lang, isDark }) => {
     try {
       console.log('[CLIENT] Sending message via EmailJS:', formData);
       
-      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-      if (!serviceId || !templateId || !publicKey) {
-        throw new Error('EmailJS is not properly configured. Please check environment variables.');
-      }
+      // Direct values as requested (Replace these with your actual EmailJS credentials)
+      const serviceId = 'service_id'; // Replace with your Service ID
+      const templateId = 'template_id'; // Replace with your Template ID
+      const publicKey = 'public_key'; // Replace with your Public Key
 
       const templateParams = {
         from_name: formData.name,
@@ -65,7 +62,7 @@ export const AboutSection = ({ lang, isDark }) => {
       }
     } catch (err) {
       console.error('Contact form error:', err);
-      setError(`Error: ${err.message}. If this persists, please email us directly at earnrealcashnepal@gmail.com`);
+      setError(`Error: ${err.message}. Please ensure your EmailJS Service ID, Template ID, and Public Key are correctly placed in the code.`);
     } finally {
       setIsSending(false);
     }
