@@ -26,6 +26,7 @@ import { Footer } from './components/Footer';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsOfService } from './components/TermsOfService';
 import { DisclaimerPage } from './components/DisclaimerPage';
+import { ContactPage } from './components/ContactPage';
 import { cn } from './types';
 import { DUMMY_IPOS } from './constants';
 import { db, ref, onValue } from './firebase';
@@ -159,6 +160,7 @@ function AppContent() {
       case 'privacy': return <PrivacyPolicy lang={lang} isDark={isDark} />;
       case 'terms': return <TermsOfService lang={lang} isDark={isDark} />;
       case 'disclaimer': return <DisclaimerPage lang={lang} isDark={isDark} />;
+      case 'contact': return <ContactPage lang={lang} isDark={isDark} />;
       default: return renderHome();
     }
   };

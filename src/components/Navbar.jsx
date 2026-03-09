@@ -5,6 +5,7 @@ import {
   TrendingUp, 
   BookOpen, 
   Info, 
+  Phone,
   Menu, 
   X, 
   Globe, 
@@ -31,6 +32,7 @@ export const Navbar = ({ lang, setLang, currentPage, setCurrentPage, isDark, set
     { id: 'predictor', label: t.predictor, icon: TrendingUp },
     { id: 'education', label: t.education, icon: BookOpen },
     { id: 'about', label: t.about, icon: Info },
+    { id: 'contact', label: 'Contact', icon: Phone },
   ];
 
   useEffect(() => {

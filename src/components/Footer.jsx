@@ -115,6 +115,7 @@ export const Footer = ({ lang, setCurrentPage, isDark }) => {
             © 2026 IPO Predictor Nepal. All rights reserved.
           </p>
           <div className="flex gap-6 text-xs text-slate-500">
+            <button onClick={() => setCurrentPage('contact')} className={cn("transition-colors", isDark ? "hover:text-white" : "hover:text-slate-900")}>Contact Us</button>
             <button onClick={() => setCurrentPage('privacy')} className={cn("transition-colors", isDark ? "hover:text-white" : "hover:text-slate-900")}>{t.privacyPolicy}</button>
             <button onClick={() => setCurrentPage('terms')} className={cn("transition-colors", isDark ? "hover:text-white" : "hover:text-slate-900")}>{t.termsOfService}</button>
             <button onClick={() => setCurrentPage('disclaimer')} className={cn("transition-colors", isDark ? "hover:text-white" : "hover:text-slate-900")}>{t.disclaimerPage}</button>
