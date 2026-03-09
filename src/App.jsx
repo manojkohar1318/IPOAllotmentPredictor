@@ -337,6 +337,79 @@ function AppContent() {
           <p className="mt-8 font-bold text-emerald-100">Stay tuned for upcoming IPO results!</p>
         </div>
       </section>
+
+      {/* Market Insights Section */}
+      <section className="max-w-7xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <h2 className={cn("text-4xl font-black mb-4", isDark ? "text-white" : "text-slate-900")}>Market Insights</h2>
+          <p className={isDark ? "text-slate-400" : "text-slate-500"}>Stay ahead with the latest trends in the Nepal Stock Market.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className={cn(
+            "p-8 rounded-[2.5rem] border",
+            isDark ? "glass border-white/10" : "bg-white border-slate-200 shadow-sm"
+          )}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <TrendingUp className="text-blue-500 w-6 h-6" />
+              </div>
+              <h3 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>Rising Retail Participation</h3>
+            </div>
+            <p className={cn("leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
+              The number of Demat accounts in Nepal has crossed 6 million, showing a massive surge in retail interest. This high participation means IPOs are often oversubscribed by 10x to 50x, making the lottery system the primary method of allotment.
+            </p>
+          </div>
+          <div className={cn(
+            "p-8 rounded-[2.5rem] border",
+            isDark ? "glass border-white/10" : "bg-white border-slate-200 shadow-sm"
+          )}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                <Star className="text-purple-500 w-6 h-6" />
+              </div>
+              <h3 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>Sector Performance</h3>
+            </div>
+            <p className={cn("leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
+              Hydropower and Commercial Banks continue to dominate the IPO landscape. While Hydropower companies often offer quicker listing gains, Banking sector IPOs are preferred for long-term stability and consistent dividend payouts.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <h2 className={cn("text-4xl font-black mb-4", isDark ? "text-white" : "text-slate-900")}>Frequently Asked Questions</h2>
+        </div>
+        <div className="space-y-4">
+          {[
+            {
+              q: "How is the IPO allotment probability calculated?",
+              a: "We use the total number of shares offered to the general public and divide it by the estimated number of valid applicants. This gives a base probability which we then adjust based on historical subscription trends for similar sectors."
+            },
+            {
+              q: "Is this an official NEPSE or CDSC tool?",
+              a: "No, this is an independent educational tool. Official allotments are conducted by the respective Issue Managers and results are published on the CDSC MeroShare portal."
+            },
+            {
+              q: "Does applying for more than 10 units increase my chances?",
+              a: "In Nepal, for most retail IPOs that are oversubscribed, the allotment is done in lots of 10 shares via lottery. Applying for more than 10 units does not increase your probability of being selected in the lottery."
+            },
+            {
+              q: "What is the 'Skip Value' in allotment?",
+              a: "The skip value is a number used in the systematic selection process to ensure randomization. It determines the interval at which applicants are selected from the sorted list after a random starting point is chosen."
+            }
+          ].map((faq, i) => (
+            <div key={i} className={cn(
+              "p-6 rounded-2xl border",
+              isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-200 shadow-sm"
+            )}>
+              <h3 className={cn("font-bold text-lg mb-2", isDark ? "text-white" : "text-slate-900")}>{faq.q}</h3>
+              <p className={isDark ? "text-slate-400" : "text-slate-600"}>{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 
