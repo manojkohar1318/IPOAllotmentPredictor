@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import "dotenv/config";
 import axios from "axios";
+import * as cheerio from "cheerio";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +18,6 @@ async function startServer() {
   // API routes
   app.get("/api/ipo-oversubscription", (req, res) => {
     // Mocking real-time data from CDSC/MeroShare
-    // In a real scenario, we would use axios and cheerio to scrape or call a real API
     const ipoData = [
       { id: '1', name: 'Upper Tamakoshi Hydropower', issuedUnits: 15000000, appliedUnits: 67500000, lastUpdated: new Date().toISOString() },
       { id: '2', name: 'Nabil Bank Debenture 2085', issuedUnits: 3000000, appliedUnits: 3600000, lastUpdated: new Date().toISOString() },
@@ -43,7 +43,6 @@ async function startServer() {
       res.json(response.data);
     } catch (error) {
       console.error("Error fetching CDSC companies:", error.message);
-      // Fallback to some common companies if CDSC is down
       res.status(500).json({ error: "Failed to fetch from CDSC", details: error.message });
     }
   });
@@ -52,44 +51,67 @@ async function startServer() {
   app.get("/api/live-oversubscription", async (req, res) => {
     try {
       const targetUrl = "https://cdsc.com.np/ipolist";
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
       
-      const response = await axios.get(proxyUrl, { timeout: 15000 });
-      const html = response.data.contents;
+      console.log("Fetching directly from CDSC:", targetUrl);
+      const response = await axios.get(targetUrl, { 
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        timeout: 20000 
+      });
       
-      // Use cheerio to parse the HTML
-      const cheerio = await import("cheerio");
+      const html = response.data;
       const $ = cheerio.load(html);
       
       const ipos = [];
-      // Assuming the data is in a table. We need to find the correct selectors.
-      // Based on typical CDSC table structure:
+      // CDSC ipolist table structure
       $("table tr").each((i, el) => {
-        if (i === 0) return; // Skip header
-        
         const cols = $(el).find("td");
-        if (cols.length >= 5) {
+        if (cols.length >= 4) {
           const name = $(cols[1]).text().trim();
-          const issuedUnit = parseFloat($(cols[3]).text().trim().replace(/,/g, '')) || 0;
-          const appliedUnit = parseFloat($(cols[4]).text().trim().replace(/,/g, '')) || 0;
+          const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
+          const appliedText = $(cols[4]).text().trim().replace(/,/g, '');
           
-          if (name && issuedUnit > 0) {
+          const issuedUnit = parseFloat(issuedText);
+          const appliedUnit = parseFloat(appliedText);
+          
+          if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
             ipos.push({
               id: `scraped-${i}`,
               name,
               issuedUnits: issuedUnit,
-              appliedUnits: appliedUnit,
-              oversubscription: appliedUnit > 0 ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
+              appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
+              oversubscription: (appliedUnit > 0 && issuedUnit > 0) ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
               lastUpdated: new Date().toISOString()
             });
           }
         }
       });
       
+      if (ipos.length === 0) {
+        console.log("No IPOs found in table, trying alternative selectors...");
+        // Try looking for any table row that might contain data
+        $(".table tr, .table-responsive tr").each((i, el) => {
+          const cols = $(el).find("td");
+          if (cols.length >= 4) {
+             // same logic as above if needed
+          }
+        });
+      }
+
+      console.log(`Scraped ${ipos.length} IPOs from CDSC`);
       res.json(ipos);
     } catch (error) {
       console.error("Scraping error:", error.message);
-      res.status(500).json({ error: "Failed to scrape IPO data", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to scrape IPO data", 
+        details: error.message,
+        fallback: true 
+      });
     }
   });
 

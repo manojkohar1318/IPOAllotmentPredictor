@@ -99,18 +99,32 @@ export const OversubscriptionChecker = ({ lang }) => {
         className="bg-white dark:bg-navy-900 rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-navy-800"
       >
         <div className="p-8 md:p-12">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl text-indigo-600 dark:text-indigo-400">
-              <Calculator size={28} />
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl text-indigo-600 dark:text-indigo-400">
+                <Calculator size={28} />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                  {t.oversubscriptionChecker}
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400">
+                  Real-time oversubscription data from CDSC
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-                {t.oversubscriptionChecker}
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400">
-                Real-time oversubscription data from CDSC
-              </p>
-            </div>
+            <button 
+              onClick={() => {
+                setCompanies([]);
+                setLoading(true);
+                // Trigger the useEffect again by re-mounting or just calling the logic
+                window.location.reload(); // Simple way to force refresh all data
+              }}
+              className="p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-navy-800 transition-all text-slate-500"
+              title="Refresh Data"
+            >
+              <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+            </button>
           </div>
 
           <div className="space-y-6">
@@ -127,13 +141,17 @@ export const OversubscriptionChecker = ({ lang }) => {
                   className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setSearchTerm('')}
+                  onFocus={() => {
+                    if (searchTerm === '') {
+                      // Show all if empty on focus
+                    }
+                  }}
                 />
               </div>
               
-              {searchTerm && filteredCompanies.length > 0 && (
+              {((searchTerm && filteredCompanies.length > 0) || (!searchTerm && companies.length > 0)) && (
                 <div className="absolute z-10 w-full mt-2 bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
-                  {filteredCompanies.map((company) => (
+                  {(searchTerm ? filteredCompanies : companies.slice(0, 10)).map((company) => (
                     <button
                       key={company.id}
                       onClick={() => {
@@ -142,7 +160,14 @@ export const OversubscriptionChecker = ({ lang }) => {
                       }}
                       className="w-full text-left px-6 py-4 hover:bg-slate-50 dark:hover:bg-navy-700 transition-colors border-b border-slate-100 dark:border-navy-700 last:border-0 dark:text-white"
                     >
-                      {company.name}
+                      <div className="flex justify-between items-center">
+                        <span>{company.name}</span>
+                        {company.oversubscription && (
+                          <span className="text-xs bg-indigo-500/10 text-indigo-500 px-2 py-1 rounded-md">
+                            {company.oversubscription}x
+                          </span>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
