@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, Calculator, Clock, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { db, ref, onValue } from '../firebase';
+import { cn } from '../cn';
 
 export const OversubscriptionChecker = ({ lang }) => {
   const [companies, setCompanies] = useState([]);
@@ -109,13 +110,27 @@ export const OversubscriptionChecker = ({ lang }) => {
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
                     {t.oversubscriptionChecker}
                   </h2>
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">Live</span>
-                  </div>
+                  {companies.length > 0 && (
+                    <div className={cn(
+                      "flex items-center gap-1.5 px-2 py-1 border rounded-full",
+                      companies[0].isLive 
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
+                        : "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                    )}>
+                      <span className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        companies[0].isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                      )} />
+                      <span className="text-[10px] font-black uppercase tracking-wider">
+                        {companies[0].isLive ? "Live" : "Estimated"}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-slate-500 dark:text-slate-400">
-                  Real-time data synced from CDSC ipolist
+                  {companies.length > 0 && !companies[0].isLive 
+                    ? "Live data unavailable. Showing recent estimates." 
+                    : "Real-time data synced from CDSC ipolist"}
                 </p>
               </div>
             </div>

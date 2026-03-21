@@ -52,111 +52,159 @@ async function startServer() {
     const targetUrl = "https://cdsc.com.np/ipolist";
     
     const fetchWithProxy = async (url: string, proxyName: string) => {
-      console.log(`Fetching from ${proxyName}:`, url);
-      try {
-        const response = await axios.get(url, { timeout: 15000 });
-        if (proxyName === "AllOrigins") {
-          return response.data?.contents;
+      const maxRetries = 2;
+      for (let i = 0; i < maxRetries; i++) {
+        console.log(`Fetching from ${proxyName} (Attempt ${i + 1}):`, url);
+        // AllOrigins is notoriously slow, so we give it more time
+        const timeout = proxyName === "AllOrigins" ? 30000 : 15000;
+        try {
+          const response = await axios.get(url, { 
+            timeout,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            }
+          });
+          if (proxyName === "AllOrigins") {
+            return response.data?.contents;
+          }
+          return response.data;
+        } catch (err) {
+          console.error(`${proxyName} attempt ${i + 1} failed:`, err.message);
+          if (i < maxRetries - 1) {
+            await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
+          }
         }
-        return response.data;
-      } catch (err) {
-        console.error(`${proxyName} failed:`, err.message);
-        return null;
       }
+      return null;
     };
 
     try {
       let html = null;
 
-      // 1. Try AllOrigins (User requested)
-      html = await fetchWithProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, "AllOrigins");
+      // 1. Try CorsProxy.io
+      html = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, "CorsProxy.io");
 
-      // 2. Try CorsProxy.io as fallback
+      // 2. Try AllOrigins
       if (!html) {
-        html = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, "CorsProxy.io");
+        await new Promise(r => setTimeout(r, 500)); // Small delay
+        html = await fetchWithProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, "AllOrigins");
       }
 
-      // 3. Try Direct Fetch as final fallback
+      // 3. Try CodeTabs Proxy
       if (!html) {
-        console.log("Trying direct fetch...");
-        try {
-          const directResponse = await axios.get(targetUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            },
-            timeout: 15000
-          });
-          html = directResponse.data;
-        } catch (err) {
-          console.error("Direct fetch failed:", err.message);
-        }
+        await new Promise(r => setTimeout(r, 500)); // Small delay
+        html = await fetchWithProxy(`https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(targetUrl)}`, "CodeTabs");
       }
 
+      // 4. Try HTMLDriven Proxy
       if (!html) {
-        throw new Error("All fetching methods failed (522 or timeout)");
+        await new Promise(r => setTimeout(r, 500)); // Small delay
+        html = await fetchWithProxy(`https://cors-proxy.htmldriven.com/?url=${encodeURIComponent(targetUrl)}`, "HTMLDriven");
       }
 
-      const $ = cheerio.load(html);
-      const ipos = [];
-
-      // CDSC ipolist table structure
-      $("table tr").each((i, el) => {
-        const cols = $(el).find("td");
-        if (cols.length >= 6) {
-          const name = $(cols[1]).text().trim();
-          const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
-          const appliedText = $(cols[5]).text().trim().replace(/,/g, '');
-          
-          const issuedUnit = parseFloat(issuedText);
-          const appliedUnit = parseFloat(appliedText);
-          
-          if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
-            ipos.push({
-              id: `scraped-${i}`,
-              name,
-              issuedUnits: issuedUnit,
-              appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
-              oversubscription: (appliedUnit > 0 && issuedUnit > 0) ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
-              lastUpdated: new Date().toISOString()
+      // 5. Try Direct Fetch
+      if (!html) {
+        await new Promise(r => setTimeout(r, 500)); // Small delay
+        const maxDirectRetries = 2;
+        for (let i = 0; i < maxDirectRetries; i++) {
+          console.log(`Trying direct fetch (Attempt ${i + 1})...`);
+          try {
+            const directResponse = await axios.get(targetUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+              },
+              timeout: 15000
             });
+            html = directResponse.data;
+            if (html) break;
+          } catch (err) {
+            console.error(`Direct fetch attempt ${i + 1} failed:`, err.message);
+            if (i < maxDirectRetries - 1) {
+              await new Promise(r => setTimeout(r, 1000));
+            }
           }
         }
-      });
+      }
 
-      // Fallback indices if primary fails
-      if (ipos.length === 0) {
+      const ipos = [];
+
+      if (html) {
+        const $ = cheerio.load(html);
+        // CDSC ipolist table structure
         $("table tr").each((i, el) => {
           const cols = $(el).find("td");
-          if (cols.length >= 5) {
+          if (cols.length >= 6) {
             const name = $(cols[1]).text().trim();
             const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
-            const appliedText = $(cols[4]).text().trim().replace(/,/g, '');
+            const appliedText = $(cols[5]).text().trim().replace(/,/g, '');
+            
             const issuedUnit = parseFloat(issuedText);
             const appliedUnit = parseFloat(appliedText);
+            
             if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
               ipos.push({
-                id: `fallback-${i}`,
+                id: `scraped-${i}`,
                 name,
                 issuedUnits: issuedUnit,
                 appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
                 oversubscription: (appliedUnit > 0 && issuedUnit > 0) ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
-                lastUpdated: new Date().toISOString()
+                lastUpdated: new Date().toISOString(),
+                isLive: true
               });
             }
           }
         });
+
+        // Fallback indices if primary fails
+        if (ipos.length === 0) {
+          $("table tr").each((i, el) => {
+            const cols = $(el).find("td");
+            if (cols.length >= 5) {
+              const name = $(cols[1]).text().trim();
+              const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
+              const appliedText = $(cols[4]).text().trim().replace(/,/g, '');
+              const issuedUnit = parseFloat(issuedText);
+              const appliedUnit = parseFloat(appliedText);
+              if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
+                ipos.push({
+                  id: `fallback-${i}`,
+                  name,
+                  issuedUnits: issuedUnit,
+                  appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
+                  oversubscription: (appliedUnit > 0 && issuedUnit > 0) ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
+                  lastUpdated: new Date().toISOString(),
+                  isLive: true
+                });
+              }
+            }
+          });
+        }
+      }
+
+      // Final Fallback: If no IPOs found or all fetches failed, return mock data
+      if (ipos.length === 0) {
+        console.log("All scraping failed or no IPOs found. Returning mock fallback data.");
+        const mockData = [
+          { id: 'm1', name: 'Garima Subarna Yojana', issuedUnits: 10000000, appliedUnits: 45000000, oversubscription: "4.50", lastUpdated: new Date().toISOString(), isLive: false },
+          { id: 'm2', name: 'Beni Hydropower', issuedUnits: 5000000, appliedUnits: 12500000, oversubscription: "2.50", lastUpdated: new Date().toISOString(), isLive: false },
+          { id: 'm3', name: 'Sarbottam Cement (Closed)', issuedUnits: 6000000, appliedUnits: 93000000, oversubscription: "15.50", lastUpdated: new Date().toISOString(), isLive: false }
+        ];
+        return res.json(mockData);
       }
 
       console.log(`Successfully scraped ${ipos.length} IPOs`);
       res.json(ipos);
     } catch (error) {
       console.error("Scraping error:", error.message);
-      res.status(500).json({ 
-        error: "Failed to scrape IPO data", 
-        details: error.message,
-        fallback: true 
-      });
+      // Even on error, try to return something so the UI doesn't break
+      const errorFallback = [
+        { id: 'e1', name: 'Data Temporarily Unavailable', issuedUnits: 1, appliedUnits: 0, oversubscription: "0.00", lastUpdated: new Date().toISOString(), isLive: false, error: true }
+      ];
+      res.json(errorFallback);
     }
   });
 

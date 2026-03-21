@@ -30,7 +30,7 @@ import { DisclaimerPage } from './components/DisclaimerPage';
 import { ContactPage } from './components/ContactPage';
 import { OversubscriptionChecker } from './components/OversubscriptionChecker';
 import { AdsterraNativeBanner } from './components/AdsterraNativeBanner';
-import { cn } from './types';
+import { cn } from './cn';
 import { DUMMY_IPOS } from './constants';
 import { db, ref, onValue } from './firebase';
 
@@ -72,15 +72,22 @@ function AppContent() {
     });
 
     // Fetch live oversubscription data
-    const fetchLiveOversubscription = async () => {
+    const fetchLiveOversubscription = async (retries = 2) => {
       try {
         const response = await fetch('/api/live-oversubscription');
         if (response.ok) {
           const data = await response.json();
-          setLiveOversubscription(data);
+          if (Array.isArray(data)) {
+            setLiveOversubscription(data);
+          }
+        } else if (retries > 0) {
+          setTimeout(() => fetchLiveOversubscription(retries - 1), 2000);
         }
       } catch (err) {
         console.error("Failed to fetch live oversubscription:", err);
+        if (retries > 0) {
+          setTimeout(() => fetchLiveOversubscription(retries - 1), 2000);
+        }
       }
     };
     fetchLiveOversubscription();
@@ -348,11 +355,16 @@ function AppContent() {
                             </div>
                             <div>
                               <div className={cn("font-bold text-sm", isDark ? "text-white" : "text-slate-900")}>{ipo.name}</div>
-                              {idx === 0 && (
-                                <div className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                                  <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" /> Live
-                                </div>
-                              )}
+                              <div className={cn(
+                                "text-[9px] font-bold uppercase tracking-wider flex items-center gap-1",
+                                ipo.isLive ? "text-emerald-500" : "text-amber-500"
+                              )}>
+                                <span className={cn(
+                                  "w-1 h-1 rounded-full",
+                                  ipo.isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                                )} /> 
+                                {ipo.isLive ? "Live" : "Estimated"}
+                              </div>
                             </div>
                           </div>
                           <div className="text-right">
