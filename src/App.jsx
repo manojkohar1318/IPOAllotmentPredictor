@@ -27,6 +27,7 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsOfService } from './components/TermsOfService';
 import { DisclaimerPage } from './components/DisclaimerPage';
 import { ContactPage } from './components/ContactPage';
+import { OversubscriptionChecker } from './components/OversubscriptionChecker';
 import { AdsterraNativeBanner } from './components/AdsterraNativeBanner';
 import { cn } from './types';
 import { DUMMY_IPOS } from './constants';
@@ -98,24 +99,6 @@ function AppContent() {
     }
   }, [isDark]);
 
-  // Load Adsterra Scripts
-  useEffect(() => {
-    const scripts = [
-      { src: "https://pl28954171.profitablecpmratenetwork.com/78/81/3d/78813d3d857c35cf8eff88fc4c9979db.js", id: "adsterra-popunder" },
-      { src: "https://pl28954198.profitablecpmratenetwork.com/3e/28/bb/3e28bb540328d89ce9c7188e380670f4.js", id: "adsterra-socialbar" }
-    ];
-
-    scripts.forEach(s => {
-      if (!document.getElementById(s.id)) {
-        const script = document.createElement('script');
-        script.src = s.src;
-        script.id = s.id;
-        script.async = true;
-        document.body.appendChild(script);
-      }
-    });
-  }, []);
-
   // Countdown timer logic
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -172,7 +155,7 @@ function AppContent() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'predictor': return <Predictor lang={lang} ipos={ipos} isDark={isDark} />;
+      case 'predictor': return <Predictor lang={lang} ipos={ipos} isDark={isDark} setCurrentPage={setCurrentPage} />;
       case 'education': return <EducationSection lang={lang} isDark={isDark} />;
       case 'about': return <AboutSection lang={lang} isDark={isDark} />;
       case 'admin': return <AdminDashboard lang={lang} ipos={ipos} setIpos={setIpos} countdownData={countdownData} setCountdownData={setCountdownData} isDark={isDark} />;
@@ -180,6 +163,7 @@ function AppContent() {
       case 'terms': return <TermsOfService lang={lang} isDark={isDark} />;
       case 'disclaimer': return <DisclaimerPage lang={lang} isDark={isDark} />;
       case 'contact': return <ContactPage lang={lang} isDark={isDark} />;
+      case 'oversubscription': return <OversubscriptionChecker lang={lang} isDark={isDark} />;
       default: return renderHome();
     }
   };

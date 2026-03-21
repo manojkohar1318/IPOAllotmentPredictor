@@ -126,7 +126,18 @@ export const TRANSLATIONS = {
     shareResult: 'Share Result',
     downloadCard: 'Download Card',
     backToForm: 'Back to Form',
-    resultFor: 'Prediction Result for'
+    resultFor: 'Prediction Result for',
+    oversubscriptionChecker: 'Oversubscription Checker',
+    selectCompany: 'Select Company',
+    checkOversubscription: 'Check Oversubscription',
+    oversubscribedBy: 'Oversubscribed by',
+    times: 'times',
+    totalIssuedUnits: 'Total Issued Units',
+    totalAppliedUnits: 'Total Applied Units',
+    lastUpdated: 'Data last updated',
+    dontKnowOversubscription: "Don't know oversubscription? Click here to check.",
+    autoFill: 'Auto-Fill',
+    loading: 'Loading...'
   },
   NP: {
     home: 'होम',
@@ -180,6 +191,17 @@ export const TRANSLATIONS = {
     shareResult: 'नतिजा सेयर गर्नुहोस्',
     downloadCard: 'कार्ड डाउनलोड गर्नुहोस्',
     backToForm: 'फारममा फर्कनुहोस्',
-    resultFor: 'को लागि भविष्यवाणी नतिजा'
+    resultFor: 'को लागि भविष्यवाणी नतिजा',
+    oversubscriptionChecker: 'ओभरसब्सक्रिप्शन चेकर',
+    selectCompany: 'कम्पनी छान्नुहोस्',
+    checkOversubscription: 'ओभरसब्सक्रिप्शन जाँच गर्नुहोस्',
+    oversubscribedBy: 'ओभरसब्सक्राइब गरिएको छ',
+    times: 'गुणा',
+    totalIssuedUnits: 'कुल जारी इकाइहरू',
+    totalAppliedUnits: 'कुल आवेदन गरिएका इकाइहरू',
+    lastUpdated: 'तथ्याङ्क अन्तिम पटक अपडेट गरिएको',
+    dontKnowOversubscription: 'ओभरसब्सक्रिप्शन थाहा छैन? जाँच गर्न यहाँ क्लिक गर्नुहोस्।',
+    autoFill: 'अटो-फिल',
+    loading: 'लोड हुँदैछ...'
   }
 };

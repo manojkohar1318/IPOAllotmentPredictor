@@ -13,7 +13,8 @@ import {
   Download,
   Loader2,
   Facebook,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { cn } from '../types';
@@ -23,11 +24,12 @@ import { db, ref, push, runTransaction } from '../firebase';
 import { FUNNY_COMMENTS } from '../utils/comments';
 import { AdsterraNativeBanner } from './AdsterraNativeBanner';
 
-export const Predictor = ({ lang, ipos, isDark }) => {
+export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
   const [step, setStep] = useState('form');
   const [loading, setLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const resultRef = useRef(null);
   
   // Form State
@@ -64,6 +66,24 @@ export const Predictor = ({ lang, ipos, isDark }) => {
       setOversubscription(selectedIpo.oversubscription.toString());
     }
   }, [selectedIpo]);
+
+  const handleAutoFill = async () => {
+    if (!selectedIpo) return;
+    setIsAutoFilling(true);
+    try {
+      const response = await fetch('/api/ipo-oversubscription');
+      const data = await response.json();
+      const companyData = data.find(c => c.name.toLowerCase().includes(selectedIpo.name.toLowerCase()));
+      if (companyData) {
+        const ratio = (companyData.appliedUnits / companyData.issuedUnits).toFixed(2);
+        setOversubscription(ratio);
+      }
+    } catch (err) {
+      console.error('Auto-fill failed:', err);
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
 
   // Handle back button
   useEffect(() => {
@@ -467,8 +487,18 @@ export const Predictor = ({ lang, ipos, isDark }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Oversubscription */}
                   <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <Users className="w-4 h-4" /> Expected Oversubscription (Times)
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Users className="w-4 h-4" /> Expected Oversubscription (Times)
+                      </span>
+                      <button 
+                        onClick={handleAutoFill}
+                        disabled={!selectedIpo || isAutoFilling}
+                        className="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-md transition-colors flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {isAutoFilling ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        {t.autoFill}
+                      </button>
                     </label>
                     <input 
                       type="number"
@@ -481,6 +511,13 @@ export const Predictor = ({ lang, ipos, isDark }) => {
                         isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
                       )}
                     />
+                    <button 
+                      onClick={() => setCurrentPage('oversubscription')}
+                      className="text-xs text-indigo-500 hover:text-indigo-400 font-bold transition-colors flex items-center gap-1"
+                    >
+                      <Calculator size={14} />
+                      {t.dontKnowOversubscription}
+                    </button>
                   </div>
 
                   {/* Number of Accounts */}

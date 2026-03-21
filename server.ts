@@ -14,6 +14,19 @@ async function startServer() {
   app.use(express.json());
 
   // API routes
+  app.get("/api/ipo-oversubscription", (req, res) => {
+    // Mocking real-time data from CDSC/MeroShare
+    // In a real scenario, we would use axios and cheerio to scrape or call a real API
+    const ipoData = [
+      { id: '1', name: 'Upper Tamakoshi Hydropower', issuedUnits: 15000000, appliedUnits: 67500000, lastUpdated: new Date().toISOString() },
+      { id: '2', name: 'Nabil Bank Debenture 2085', issuedUnits: 3000000, appliedUnits: 3600000, lastUpdated: new Date().toISOString() },
+      { id: '3', name: 'Sarbottam Cement', issuedUnits: 6000000, appliedUnits: 93000000, lastUpdated: new Date().toISOString() },
+      { id: '4', name: 'Himalayan Reinsurance', issuedUnits: 30000000, appliedUnits: 120000000, lastUpdated: new Date().toISOString() },
+      { id: '5', name: 'Sonapur Minerals', issuedUnits: 12000000, appliedUnits: 48000000, lastUpdated: new Date().toISOString() }
+    ];
+    res.json(ipoData);
+  });
+
   app.get("/robots.txt", (req, res) => {
     res.type("text/plain");
     res.send("User-agent: *\nAllow: /\nSitemap: https://ais-pre-juqdc7qwq7yawob6ij2axa-289326504495.asia-east1.run.app/sitemap.xml");

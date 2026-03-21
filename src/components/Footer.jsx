@@ -66,7 +66,7 @@ export const Footer = ({ lang, setCurrentPage, isDark }) => {
           <div>
             <h4 className={cn("text-lg font-bold mb-6", isDark ? "text-white" : "text-slate-900")}>Quick Links</h4>
             <ul className="space-y-4">
-              {['home', 'predictor', 'education', 'about'].map((id) => (
+              {['home', 'predictor', 'oversubscription', 'education', 'about'].map((id) => (
                 <li key={id}>
                   <button 
                     onClick={() => setCurrentPage(id)}
@@ -75,7 +75,7 @@ export const Footer = ({ lang, setCurrentPage, isDark }) => {
                       isDark ? "text-slate-400 hover:text-emerald-400" : "text-slate-600 hover:text-emerald-600"
                     )}
                   >
-                    {t[id]}
+                    {t[id] || (id === 'oversubscription' ? t.oversubscriptionChecker : id)}
                   </button>
                 </li>
               ))}

@@ -11,7 +11,8 @@ import {
   Globe, 
   Moon, 
   Sun,
-  Facebook
+  Facebook,
+  Calculator
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { cn } from '../types';
@@ -30,6 +31,7 @@ export const Navbar = ({ lang, setLang, currentPage, setCurrentPage, isDark, set
   const navLinks = [
     { id: 'home', label: t.home, icon: Home },
     { id: 'predictor', label: t.predictor, icon: TrendingUp },
+    { id: 'oversubscription', label: 'Oversubscription', icon: Calculator },
     { id: 'education', label: t.education, icon: BookOpen },
     { id: 'about', label: t.about, icon: Info },
     { id: 'contact', label: 'Contact', icon: Phone },
