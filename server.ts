@@ -48,6 +48,51 @@ async function startServer() {
     }
   });
 
+  // Live Oversubscription Scraper from CDSC ipolist
+  app.get("/api/live-oversubscription", async (req, res) => {
+    try {
+      const targetUrl = "https://cdsc.com.np/ipolist";
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+      
+      const response = await axios.get(proxyUrl, { timeout: 15000 });
+      const html = response.data.contents;
+      
+      // Use cheerio to parse the HTML
+      const cheerio = await import("cheerio");
+      const $ = cheerio.load(html);
+      
+      const ipos = [];
+      // Assuming the data is in a table. We need to find the correct selectors.
+      // Based on typical CDSC table structure:
+      $("table tr").each((i, el) => {
+        if (i === 0) return; // Skip header
+        
+        const cols = $(el).find("td");
+        if (cols.length >= 5) {
+          const name = $(cols[1]).text().trim();
+          const issuedUnit = parseFloat($(cols[3]).text().trim().replace(/,/g, '')) || 0;
+          const appliedUnit = parseFloat($(cols[4]).text().trim().replace(/,/g, '')) || 0;
+          
+          if (name && issuedUnit > 0) {
+            ipos.push({
+              id: `scraped-${i}`,
+              name,
+              issuedUnits: issuedUnit,
+              appliedUnits: appliedUnit,
+              oversubscription: appliedUnit > 0 ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
+              lastUpdated: new Date().toISOString()
+            });
+          }
+        }
+      });
+      
+      res.json(ipos);
+    } catch (error) {
+      console.error("Scraping error:", error.message);
+      res.status(500).json({ error: "Failed to scrape IPO data", details: error.message });
+    }
+  });
+
   app.get("/robots.txt", (req, res) => {
     res.type("text/plain");
     res.send("User-agent: *\nAllow: /\nSitemap: https://ais-pre-juqdc7qwq7yawob6ij2axa-289326504495.asia-east1.run.app/sitemap.xml");

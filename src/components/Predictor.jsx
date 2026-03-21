@@ -71,16 +71,26 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
     if (!selectedIpo) return;
     setIsAutoFilling(true);
     try {
-      // Try Firebase first
-      const overSubRef = ref(db, 'oversubscription');
-      const snapshot = await get(overSubRef);
       let data = [];
       
-      if (snapshot.exists()) {
-        const val = snapshot.val();
-        data = Object.keys(val).map(key => ({ id: key, ...val[key] }));
-      } else {
-        // Fallback to API
+      // Try live scraper first
+      const liveResponse = await fetch('/api/live-oversubscription');
+      if (liveResponse.ok) {
+        data = await liveResponse.json();
+      }
+      
+      // If live scraper returned nothing, try Firebase
+      if (data.length === 0) {
+        const overSubRef = ref(db, 'oversubscription');
+        const snapshot = await get(overSubRef);
+        if (snapshot.exists()) {
+          const val = snapshot.val();
+          data = Object.keys(val).map(key => ({ id: key, ...val[key] }));
+        }
+      }
+      
+      // If still nothing, try internal API
+      if (data.length === 0) {
         const response = await fetch('/api/ipo-oversubscription');
         if (response.ok) {
           data = await response.json();
@@ -533,7 +543,7 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
                       className="text-xs text-indigo-500 hover:text-indigo-400 font-bold transition-colors flex items-center gap-1"
                     >
                       <Calculator size={14} />
-                      {t.dontKnowOversubscription}
+                      Don't know it? [Click to Check]
                     </button>
                   </div>
 

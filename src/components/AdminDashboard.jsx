@@ -11,7 +11,8 @@ import {
   Database,
   Clock,
   Calculator,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { SECTORS, DUMMY_IPOS } from '../constants';
 import { cn } from '../types';
@@ -26,6 +27,8 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
   const [overSubSearchQuery, setOverSubSearchQuery] = useState('');
   const [error, setError] = useState(null);
   const [overSubData, setOverSubData] = useState([]);
+  const [liveOverSubData, setLiveOverSubData] = useState([]);
+  const [isFetchingLive, setIsFetchingLive] = useState(false);
 
   useEffect(() => {
     const overSubRef = ref(db, 'oversubscription');
@@ -41,7 +44,24 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
         setOverSubData([]);
       }
     });
+
+    fetchLiveOversubscription();
   }, []);
+
+  const fetchLiveOversubscription = async () => {
+    setIsFetchingLive(true);
+    try {
+      const response = await fetch('/api/live-oversubscription');
+      if (response.ok) {
+        const data = await response.json();
+        setLiveOverSubData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch live oversubscription:", err);
+    } finally {
+      setIsFetchingLive(false);
+    }
+  };
 
   const [countdownForm, setCountdownForm] = useState({
     company: countdownData.company,
@@ -326,6 +346,107 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
             Update Countdown
           </button>
         </form>
+      </div>
+
+      {/* Live Oversubscription Monitor */}
+      <div className={cn(
+        "glass rounded-[2.5rem] border p-8 mb-12 relative overflow-hidden",
+        isDark ? "border-white/10" : "border-slate-200 bg-white/50"
+      )}>
+        <div className="absolute top-0 right-0 p-8 opacity-5">
+          <TrendingUp className="w-32 h-32" />
+        </div>
+        <div className="flex items-center justify-between mb-8 relative">
+          <div>
+            <h2 className={cn("text-2xl font-bold flex items-center gap-2", isDark ? "text-white" : "text-slate-900")}>
+              <TrendingUp className="text-emerald-500" /> Live Oversubscription Monitor
+            </h2>
+            <p className="text-sm text-slate-500">Real-time data scraped from CDSC ipolist</p>
+          </div>
+          <button 
+            onClick={fetchLiveOversubscription}
+            disabled={isFetchingLive}
+            className={cn(
+              "p-3 rounded-xl transition-all",
+              isDark ? "bg-white/5 hover:bg-white/10 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-900"
+            )}
+          >
+            <RefreshCw className={cn("w-5 h-5", isFetchingLive && "animate-spin")} />
+          </button>
+        </div>
+
+        {isFetchingLive && liveOverSubData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
+            <p className="text-slate-500 font-medium">Fetching live data from CDSC...</p>
+          </div>
+        ) : liveOverSubData.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {liveOverSubData.map((ipo) => (
+              <div key={ipo.id} className={cn(
+                "p-6 rounded-2xl border relative group transition-all",
+                isDark ? "bg-navy-900/50 border-white/10 hover:border-emerald-500/30" : "bg-white border-slate-200 hover:border-emerald-500/30 shadow-sm"
+              )}>
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className={cn("font-bold text-lg leading-tight", isDark ? "text-white" : "text-slate-900")}>
+                    {ipo.name}
+                  </h3>
+                  <span className="bg-emerald-500/10 text-emerald-500 text-xs font-black px-2 py-1 rounded-lg border border-emerald-500/20 whitespace-nowrap">
+                    {ipo.oversubscription}x Oversubscribed
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-500">Issued Units</span>
+                    <span className={isDark ? "text-slate-300" : "text-slate-700"}>{ipo.issuedUnits.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-500">Applied Units</span>
+                    <span className={isDark ? "text-slate-300" : "text-slate-700"}>{ipo.appliedUnits.toLocaleString()}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-200 dark:bg-navy-800 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((parseFloat(ipo.oversubscription) / 20) * 100, 100)}%` }}
+                      className="h-full bg-emerald-500"
+                    />
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    const overSubRef = ref(db, 'oversubscription');
+                    const exists = overSubData.some(item => item.name === ipo.name);
+                    if (exists) {
+                      const existing = overSubData.find(item => item.name === ipo.name);
+                      update(ref(db, `oversubscription/${existing.id}`), {
+                        appliedUnits: ipo.appliedUnits,
+                        issuedUnits: ipo.issuedUnits,
+                        lastUpdated: new Date().toISOString()
+                      }).then(() => alert('Updated in database!'));
+                    } else {
+                      const newRef = push(overSubRef);
+                      set(newRef, {
+                        name: ipo.name,
+                        issuedUnits: ipo.issuedUnits,
+                        appliedUnits: ipo.appliedUnits,
+                        lastUpdated: new Date().toISOString()
+                      }).then(() => alert('Added to database!'));
+                    }
+                  }}
+                  className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-emerald-500 text-white rounded-lg shadow-lg"
+                  title="Sync to Database"
+                >
+                  <Save className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl">
+            <AlertCircle className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+            <p className="text-slate-500 font-medium">No active IPOs found on CDSC ipolist.</p>
+          </div>
+        )}
       </div>
 
       {/* Oversubscription Management */}

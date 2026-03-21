@@ -14,60 +14,63 @@ export const OversubscriptionChecker = ({ lang }) => {
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
-    setLoading(true);
-    const overSubRef = ref(db, 'oversubscription');
-    const unsubscribe = onValue(overSubRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key]
-        }));
-        setCompanies(list);
-        setError(null);
-      } else {
-        // Fallback to API if Firebase is empty (for initial setup)
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch live data from CDSC scraper first
+        const liveResponse = await fetch('/api/live-oversubscription');
+        if (liveResponse.ok) {
+          const liveData = await liveResponse.json();
+          if (liveData && liveData.length > 0) {
+            setCompanies(liveData);
+            setLoading(false);
+            return; // Use live data if available
+          }
+        }
+        
+        // Fallback to Firebase if live fetch fails or is empty
+        const overSubRef = ref(db, 'oversubscription');
+        onValue(overSubRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            const list = Object.keys(data).map(key => ({
+              id: key,
+              ...data[key]
+            }));
+            setCompanies(list);
+          } else {
+            fetchFromAPI(); // Final fallback
+          }
+          setLoading(false);
+        }, (err) => {
+          console.error(err);
+          fetchFromAPI();
+          setLoading(false);
+        });
+      } catch (err) {
+        console.error("Error loading data:", err);
         fetchFromAPI();
+        setLoading(false);
       }
-      setLoading(false);
-    }, (err) => {
-      console.error(err);
-      fetchFromAPI();
-    });
+    };
 
-    return () => unsubscribe();
+    loadData();
   }, []);
 
   const fetchFromAPI = async () => {
     try {
-      // Try our internal oversubscription API first
+      // Try our internal oversubscription API
       const response = await fetch('/api/ipo-oversubscription');
       if (response.ok) {
         const data = await response.json();
         setCompanies(data);
       } else {
-        // Fallback to CDSC company list if our API fails
-        const cdscResponse = await fetch('/api/cdsc-companies');
-        if (cdscResponse.ok) {
-          const cdscData = await cdscResponse.json();
-          if (cdscData && cdscData.body) {
-            const list = cdscData.body.map(c => ({
-              id: c.id,
-              name: c.name,
-              issuedUnits: 1000000, // Placeholder
-              appliedUnits: 0,      // Placeholder
-              lastUpdated: new Date().toISOString()
-            }));
-            setCompanies(list);
-          }
-        } else {
-          setError('Could not load IPO data. Please try again later.');
-        }
+        setError('Could not load IPO data. Please try again later.');
       }
     } catch (err) {
       setError('Could not load IPO data. Please try again later.');
-    } finally {
-      setLoading(false);
     }
   };
 
