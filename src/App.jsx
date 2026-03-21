@@ -98,6 +98,24 @@ function AppContent() {
     }
   }, [isDark]);
 
+  // Load Adsterra Scripts
+  useEffect(() => {
+    const scripts = [
+      { src: "https://pl28954171.profitablecpmratenetwork.com/78/81/3d/78813d3d857c35cf8eff88fc4c9979db.js", id: "adsterra-popunder" },
+      { src: "https://pl28954198.profitablecpmratenetwork.com/3e/28/bb/3e28bb540328d89ce9c7188e380670f4.js", id: "adsterra-socialbar" }
+    ];
+
+    scripts.forEach(s => {
+      if (!document.getElementById(s.id)) {
+        const script = document.createElement('script');
+        script.src = s.src;
+        script.id = s.id;
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    });
+  }, []);
+
   // Countdown timer logic
   useEffect(() => {
     const calculateTimeLeft = () => {
