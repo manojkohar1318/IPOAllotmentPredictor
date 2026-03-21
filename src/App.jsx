@@ -4,6 +4,7 @@ import {
   TrendingUp, 
   CheckCircle2, 
   ArrowRight,
+  Calculator,
   Star,
   Bell,
   X,
@@ -343,6 +344,35 @@ function AppContent() {
           </div>
           <p className="mt-8 font-bold text-emerald-100">Stay tuned for upcoming IPO results!</p>
         </div>
+      </section>
+
+      {/* Oversubscription Checker Card */}
+      <section className="max-w-7xl mx-auto px-4">
+        <motion.div 
+          whileHover={{ y: -5 }}
+          className={cn(
+            "glass p-8 md:p-12 rounded-[3rem] border flex flex-col md:flex-row items-center gap-8 text-center md:text-left",
+            isDark ? "border-white/10 bg-indigo-900/10" : "border-indigo-100 bg-indigo-50/50"
+          )}
+        >
+          <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-xl shadow-indigo-900/20 shrink-0">
+            <Calculator className="text-white w-10 h-10" />
+          </div>
+          <div className="flex-1">
+            <h2 className={cn("text-3xl font-black mb-2", isDark ? "text-white" : "text-slate-900")}>
+              {t.oversubscriptionChecker}
+            </h2>
+            <p className={cn("text-lg mb-6", isDark ? "text-slate-400" : "text-slate-600")}>
+              Don't guess the numbers. Check real-time oversubscription data directly from CDSC to get the most accurate allotment predictions.
+            </p>
+            <button 
+              onClick={() => setCurrentPage('oversubscription')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 mx-auto md:mx-0"
+            >
+              Check Real-time Data <ArrowRight size={20} />
+            </button>
+          </div>
+        </motion.div>
       </section>
 
       {/* Market Insights Section */}

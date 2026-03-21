@@ -20,7 +20,7 @@ import { TRANSLATIONS } from '../constants';
 import { cn } from '../types';
 import ReactConfetti from 'react-confetti';
 import html2canvas from 'html2canvas';
-import { db, ref, push, runTransaction } from '../firebase';
+import { db, ref, push, runTransaction, get } from '../firebase';
 import { FUNNY_COMMENTS } from '../utils/comments';
 import { AdsterraNativeBanner } from './AdsterraNativeBanner';
 
@@ -71,15 +71,32 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
     if (!selectedIpo) return;
     setIsAutoFilling(true);
     try {
-      const response = await fetch('/api/ipo-oversubscription');
-      const data = await response.json();
+      // Try Firebase first
+      const overSubRef = ref(db, 'oversubscription');
+      const snapshot = await get(overSubRef);
+      let data = [];
+      
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        data = Object.keys(val).map(key => ({ id: key, ...val[key] }));
+      } else {
+        // Fallback to API
+        const response = await fetch('/api/ipo-oversubscription');
+        if (response.ok) {
+          data = await response.json();
+        }
+      }
+
       const companyData = data.find(c => c.name.toLowerCase().includes(selectedIpo.name.toLowerCase()));
       if (companyData) {
         const ratio = (companyData.appliedUnits / companyData.issuedUnits).toFixed(2);
         setOversubscription(ratio);
+      } else {
+        alert('No oversubscription data found for this company.');
       }
     } catch (err) {
       console.error('Auto-fill failed:', err);
+      alert('Could not fetch oversubscription data. Please enter manually.');
     } finally {
       setIsAutoFilling(false);
     }

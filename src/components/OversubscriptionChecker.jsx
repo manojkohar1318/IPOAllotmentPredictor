@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Calculator, Clock, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
+import { db, ref, onValue } from '../firebase';
 
 export const OversubscriptionChecker = ({ lang }) => {
   const [companies, setCompanies] = useState([]);
@@ -13,17 +14,39 @@ export const OversubscriptionChecker = ({ lang }) => {
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
-    fetchCompanies();
+    setLoading(true);
+    const overSubRef = ref(db, 'oversubscription');
+    const unsubscribe = onValue(overSubRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key]
+        }));
+        setCompanies(list);
+        setError(null);
+      } else {
+        // Fallback to API if Firebase is empty (for initial setup)
+        fetchFromAPI();
+      }
+      setLoading(false);
+    }, (err) => {
+      console.error(err);
+      fetchFromAPI();
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const fetchCompanies = async () => {
-    setLoading(true);
+  const fetchFromAPI = async () => {
     try {
       const response = await fetch('/api/ipo-oversubscription');
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const data = await response.json();
-      setCompanies(data);
-      setError(null);
+      if (response.ok) {
+        const data = await response.json();
+        setCompanies(data);
+      } else {
+        setError('Could not load IPO data. Please try again later.');
+      }
     } catch (err) {
       setError('Could not load IPO data. Please try again later.');
     } finally {

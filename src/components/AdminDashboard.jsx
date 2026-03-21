@@ -9,7 +9,8 @@ import {
   Save, 
   AlertCircle,
   Database,
-  Clock
+  Clock,
+  Calculator
 } from 'lucide-react';
 import { SECTORS, DUMMY_IPOS } from '../constants';
 import { cn } from '../types';
@@ -17,9 +18,29 @@ import { db, ref, set, push, update, remove } from '../firebase';
 
 export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdownData, isDark }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOverSubModalOpen, setIsOverSubModalOpen] = useState(false);
   const [editingIpo, setEditingIpo] = useState(null);
+  const [editingOverSub, setEditingOverSub] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [overSubSearchQuery, setOverSubSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const [overSubData, setOverSubData] = useState([]);
+
+  useEffect(() => {
+    const overSubRef = ref(db, 'oversubscription');
+    onValue(overSubRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key]
+        }));
+        setOverSubData(list);
+      } else {
+        setOverSubData([]);
+      }
+    });
+  }, []);
 
   const [countdownForm, setCountdownForm] = useState({
     company: countdownData.company,
@@ -36,6 +57,13 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     price: 100,
     openDate: '',
     closeDate: ''
+  });
+
+  const [overSubFormData, setOverSubFormData] = useState({
+    name: '',
+    issuedUnits: 0,
+    appliedUnits: 0,
+    lastUpdated: new Date().toISOString()
   });
 
   // Sync countdown form when data changes from Firebase
@@ -119,9 +147,57 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
       .catch(err => alert("Failed to delete IPO from Firebase."));
   };
 
+  const handleOpenOverSubModal = (data) => {
+    if (data) {
+      setEditingOverSub(data);
+      setOverSubFormData(data);
+    } else {
+      setEditingOverSub(null);
+      setOverSubFormData({
+        name: '',
+        issuedUnits: 0,
+        appliedUnits: 0,
+        lastUpdated: new Date().toISOString()
+      });
+    }
+    setIsOverSubModalOpen(true);
+  };
+
+  const handleOverSubSubmit = (e) => {
+    e.preventDefault();
+    const dataToSave = {
+      ...overSubFormData,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    if (editingOverSub) {
+      const overSubRef = ref(db, `oversubscription/${editingOverSub.id}`);
+      set(overSubRef, dataToSave)
+        .then(() => setIsOverSubModalOpen(false))
+        .catch(err => alert("Failed to update oversubscription in Firebase."));
+    } else {
+      const overSubRef = ref(db, 'oversubscription');
+      const newRef = push(overSubRef);
+      set(newRef, dataToSave)
+        .then(() => setIsOverSubModalOpen(false))
+        .catch(err => alert("Failed to add oversubscription to Firebase."));
+    }
+  };
+
+  const handleOverSubDelete = (id) => {
+    if (!window.confirm('Are you sure you want to delete this oversubscription data?')) return;
+    const overSubRef = ref(db, `oversubscription/${id}`);
+    set(overSubRef, null)
+      .catch(err => alert("Failed to delete from Firebase."));
+  };
+
   const filteredIpos = ipos.filter(ipo => 
     ipo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ipo.nameNP.includes(searchQuery)
+  );
+
+  const filteredOverSub = overSubData.filter(item => 
+    item.name.toLowerCase().includes(overSubSearchQuery.toLowerCase())
   );
 
   return (
@@ -209,6 +285,159 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
           </button>
         </form>
       </div>
+
+      {/* Oversubscription Management */}
+      <div className={cn(
+        "glass rounded-[2.5rem] border p-8 mb-12",
+        isDark ? "border-white/10" : "border-slate-200 bg-white/50"
+      )}>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className={cn("text-2xl font-bold flex items-center gap-2", isDark ? "text-white" : "text-slate-900")}>
+            <Calculator className="text-indigo-500" /> Manage Oversubscription Data
+          </h2>
+          <button 
+            onClick={() => handleOpenOverSubModal()}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" /> Add Data
+          </button>
+        </div>
+
+        <div className="mb-6 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+          <input 
+            type="text"
+            placeholder="Search oversubscription data..."
+            value={overSubSearchQuery}
+            onChange={(e) => setOverSubSearchQuery(e.target.value)}
+            className={cn(
+              "w-full border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all",
+              isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+            )}
+          />
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className={cn("border-b", isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200")}>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Company</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Issued Units</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Applied Units</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Ratio</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className={cn("divide-y", isDark ? "divide-white/5" : "divide-slate-100")}>
+              {filteredOverSub.map((item) => (
+                <tr key={item.id} className={cn("transition-colors", isDark ? "hover:bg-white/5" : "hover:bg-slate-50")}>
+                  <td className="px-6 py-4 font-bold dark:text-white">{item.name}</td>
+                  <td className="px-6 py-4 dark:text-slate-300">{item.issuedUnits.toLocaleString()}</td>
+                  <td className="px-6 py-4 dark:text-slate-300">{item.appliedUnits.toLocaleString()}</td>
+                  <td className="px-6 py-4 font-bold text-indigo-500">{(item.appliedUnits / item.issuedUnits).toFixed(2)}x</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => handleOpenOverSubModal(item)}
+                        className={cn(
+                          "p-2 rounded-lg transition-all",
+                          isDark ? "bg-white/5 hover:bg-indigo-500/20 hover:text-indigo-500" : "bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600"
+                        )}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleOverSubDelete(item.id)}
+                        className={cn(
+                          "p-2 rounded-lg transition-all",
+                          isDark ? "bg-white/5 hover:bg-red-500/20 hover:text-red-500" : "bg-slate-100 hover:bg-red-100 hover:text-red-600"
+                        )}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add/Edit Modal */}
+      <AnimatePresence>
+        {isOverSubModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOverSubModalOpen(false)}
+              className="absolute inset-0 bg-navy-950/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative w-full max-w-md glass rounded-[2.5rem] border overflow-hidden shadow-2xl",
+                isDark ? "border-white/10" : "border-slate-200 bg-white"
+              )}
+            >
+              <div className={cn("p-8 border-b flex items-center justify-between", isDark ? "border-white/10" : "border-slate-100")}>
+                <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>{editingOverSub ? 'Edit Data' : 'Add Data'}</h2>
+                <button onClick={() => setIsOverSubModalOpen(false)} className={cn("p-2 rounded-xl transition-all", isDark ? "hover:bg-white/5 text-white" : "hover:bg-slate-100 text-slate-900")}>
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleOverSubSubmit} className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Company Name</label>
+                  <input 
+                    required
+                    value={overSubFormData.name}
+                    onChange={(e) => setOverSubFormData({...overSubFormData, name: e.target.value})}
+                    className={cn(
+                      "w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50",
+                      isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Issued Units</label>
+                  <input 
+                    type="number"
+                    required
+                    value={overSubFormData.issuedUnits}
+                    onChange={(e) => setOverSubFormData({...overSubFormData, issuedUnits: Number(e.target.value)})}
+                    className={cn(
+                      "w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50",
+                      isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Applied Units</label>
+                  <input 
+                    type="number"
+                    required
+                    value={overSubFormData.appliedUnits}
+                    onChange={(e) => setOverSubFormData({...overSubFormData, appliedUnits: Number(e.target.value)})}
+                    className={cn(
+                      "w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50",
+                      isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+                    )}
+                  />
+                </div>
+                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                  <Save className="w-5 h-5" /> Save Data
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         <div className="lg:col-span-3 relative">
