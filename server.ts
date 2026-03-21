@@ -49,32 +49,64 @@ async function startServer() {
 
   // Live Oversubscription Scraper from CDSC ipolist
   app.get("/api/live-oversubscription", async (req, res) => {
+    const targetUrl = "https://cdsc.com.np/ipolist";
+    
+    const fetchWithProxy = async (url: string, proxyName: string) => {
+      console.log(`Fetching from ${proxyName}:`, url);
+      try {
+        const response = await axios.get(url, { timeout: 15000 });
+        if (proxyName === "AllOrigins") {
+          return response.data?.contents;
+        }
+        return response.data;
+      } catch (err) {
+        console.error(`${proxyName} failed:`, err.message);
+        return null;
+      }
+    };
+
     try {
-      const targetUrl = "https://cdsc.com.np/ipolist";
-      
-      console.log("Fetching directly from CDSC:", targetUrl);
-      const response = await axios.get(targetUrl, { 
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        },
-        timeout: 20000 
-      });
-      
-      const html = response.data;
+      let html = null;
+
+      // 1. Try AllOrigins (User requested)
+      html = await fetchWithProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, "AllOrigins");
+
+      // 2. Try CorsProxy.io as fallback
+      if (!html) {
+        html = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, "CorsProxy.io");
+      }
+
+      // 3. Try Direct Fetch as final fallback
+      if (!html) {
+        console.log("Trying direct fetch...");
+        try {
+          const directResponse = await axios.get(targetUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            },
+            timeout: 15000
+          });
+          html = directResponse.data;
+        } catch (err) {
+          console.error("Direct fetch failed:", err.message);
+        }
+      }
+
+      if (!html) {
+        throw new Error("All fetching methods failed (522 or timeout)");
+      }
+
       const $ = cheerio.load(html);
-      
       const ipos = [];
+
       // CDSC ipolist table structure
       $("table tr").each((i, el) => {
         const cols = $(el).find("td");
-        if (cols.length >= 4) {
+        if (cols.length >= 6) {
           const name = $(cols[1]).text().trim();
           const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
-          const appliedText = $(cols[4]).text().trim().replace(/,/g, '');
+          const appliedText = $(cols[5]).text().trim().replace(/,/g, '');
           
           const issuedUnit = parseFloat(issuedText);
           const appliedUnit = parseFloat(appliedText);
@@ -91,19 +123,32 @@ async function startServer() {
           }
         }
       });
-      
+
+      // Fallback indices if primary fails
       if (ipos.length === 0) {
-        console.log("No IPOs found in table, trying alternative selectors...");
-        // Try looking for any table row that might contain data
-        $(".table tr, .table-responsive tr").each((i, el) => {
+        $("table tr").each((i, el) => {
           const cols = $(el).find("td");
-          if (cols.length >= 4) {
-             // same logic as above if needed
+          if (cols.length >= 5) {
+            const name = $(cols[1]).text().trim();
+            const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
+            const appliedText = $(cols[4]).text().trim().replace(/,/g, '');
+            const issuedUnit = parseFloat(issuedText);
+            const appliedUnit = parseFloat(appliedText);
+            if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
+              ipos.push({
+                id: `fallback-${i}`,
+                name,
+                issuedUnits: issuedUnit,
+                appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
+                oversubscription: (appliedUnit > 0 && issuedUnit > 0) ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
+                lastUpdated: new Date().toISOString()
+              });
+            }
           }
         });
       }
 
-      console.log(`Scraped ${ipos.length} IPOs from CDSC`);
+      console.log(`Successfully scraped ${ipos.length} IPOs`);
       res.json(ipos);
     } catch (error) {
       console.error("Scraping error:", error.message);

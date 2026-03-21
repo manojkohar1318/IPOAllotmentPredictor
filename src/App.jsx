@@ -39,6 +39,7 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isDark, setIsDark] = useState(true);
   const [ipos, setIpos] = useState(DUMMY_IPOS);
+  const [liveOversubscription, setLiveOversubscription] = useState([]);
   const [countdownData, setCountdownData] = useState({
     company: 'Sarbottam Cement',
     targetDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
@@ -46,13 +47,12 @@ function AppContent() {
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
   const t = TRANSLATIONS[lang];
 
-  // Fetch data from Firebase
+  // Fetch data from Firebase and Live Scraper
   useEffect(() => {
     const iposRef = ref(db, 'ipos');
     const unsubscribeIpos = onValue(iposRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Convert object to array if it's stored as an object
         const ipoList = Object.keys(data).map(key => ({
           ...data[key],
           id: key
@@ -71,6 +71,20 @@ function AppContent() {
       }
     });
 
+    // Fetch live oversubscription data
+    const fetchLiveOversubscription = async () => {
+      try {
+        const response = await fetch('/api/live-oversubscription');
+        if (response.ok) {
+          const data = await response.json();
+          setLiveOversubscription(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch live oversubscription:", err);
+      }
+    };
+    fetchLiveOversubscription();
+
     // Fetch from CDSC as fallback/additional data
     const fetchCDSC = async () => {
       try {
@@ -81,7 +95,7 @@ function AppContent() {
             const cdscIpos = data.body.map(c => ({
               id: `cdsc-${c.id}`,
               name: c.name,
-              nameNP: c.name, // CDSC API usually returns English names
+              nameNP: c.name,
               sector: 'Other',
               type: 'IPO',
               category: 'General Public',
@@ -92,7 +106,6 @@ function AppContent() {
             }));
             
             setIpos(prev => {
-              // Merge, keeping Firebase data as priority
               const existingNames = new Set(prev.map(ipo => ipo.name.toLowerCase()));
               const newOnes = cdscIpos.filter(ipo => !existingNames.has(ipo.name.toLowerCase()));
               return [...prev, ...newOnes];
@@ -321,24 +334,69 @@ function AppContent() {
                 "p-8 rounded-3xl border shadow-2xl rotate-3",
                 isDark ? "bg-navy-800 border-white/10" : "bg-white border-slate-200"
               )}>
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                    <CheckCircle2 className="text-emerald-500 w-6 h-6" />
+                {liveOversubscription.length > 0 ? (
+                  <div className="space-y-8">
+                    {liveOversubscription.slice(0, 3).map((ipo, idx) => (
+                      <div key={ipo.id} className={cn(
+                        "pb-6 border-b last:border-0 last:pb-0",
+                        isDark ? "border-white/5" : "border-slate-100"
+                      )}>
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                              <CheckCircle2 className="text-emerald-500 w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className={cn("font-bold text-sm", isDark ? "text-white" : "text-slate-900")}>{ipo.name}</div>
+                              {idx === 0 && (
+                                <div className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                                  <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" /> Live
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xl font-black text-emerald-500">{ipo.oversubscription}x</div>
+                            <div className="text-[9px] text-slate-500 uppercase font-bold">Oversubscribed</div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="h-1.5 bg-slate-200 dark:bg-navy-900 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-emerald-500 transition-all duration-1000" 
+                              style={{ width: `${Math.min((parseFloat(ipo.oversubscription) / 20) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[9px] font-bold text-slate-500">
+                            <span>Issued: {(ipo.issuedUnits / 1000000).toFixed(1)}M</span>
+                            <span>Applied: {(ipo.appliedUnits / 1000000).toFixed(1)}M</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <div className={cn("font-bold", isDark ? "text-white" : "text-slate-900")}>Sarbottam Cement</div>
-                    <div className="text-xs text-slate-500">Oversubscribed by 15.5x</div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="h-2 bg-slate-200 dark:bg-navy-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 w-[75%]" />
-                  </div>
-                  <div className="flex justify-between text-xs font-bold text-slate-500">
-                    <span>Issued: 6M Units</span>
-                    <span>Applied: 93M Units</span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                        <CheckCircle2 className="text-emerald-500 w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className={cn("font-bold", isDark ? "text-white" : "text-slate-900")}>Sarbottam Cement</div>
+                        <div className="text-xs text-slate-500">Oversubscribed by 15.5x</div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="h-2 bg-slate-200 dark:bg-navy-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 w-[75%]" />
+                      </div>
+                      <div className="flex justify-between text-xs font-bold text-slate-500">
+                        <span>Issued: 6M Units</span>
+                        <span>Applied: 93M Units</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -101,15 +101,21 @@ export const OversubscriptionChecker = ({ lang }) => {
         <div className="p-8 md:p-12">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl text-indigo-600 dark:text-indigo-400">
+              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 dark:text-emerald-400">
                 <Calculator size={28} />
               </div>
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-                  {t.oversubscriptionChecker}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                    {t.oversubscriptionChecker}
+                  </h2>
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">Live</span>
+                  </div>
+                </div>
                 <p className="text-slate-500 dark:text-slate-400">
-                  Real-time oversubscription data from CDSC
+                  Real-time data synced from CDSC ipolist
                 </p>
               </div>
             </div>
@@ -117,8 +123,7 @@ export const OversubscriptionChecker = ({ lang }) => {
               onClick={() => {
                 setCompanies([]);
                 setLoading(true);
-                // Trigger the useEffect again by re-mounting or just calling the logic
-                window.location.reload(); // Simple way to force refresh all data
+                window.location.reload();
               }}
               className="p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-navy-800 transition-all text-slate-500"
               title="Refresh Data"
@@ -137,33 +142,38 @@ export const OversubscriptionChecker = ({ lang }) => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
                   type="text"
-                  placeholder={t.searchPlaceholder}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  placeholder="-- Select Current IPO --"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all dark:text-white font-medium"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => {
-                    if (searchTerm === '') {
-                      // Show all if empty on focus
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    if (selectedCompany && e.target.value !== selectedCompany.name) {
+                      setSelectedCompany(null);
+                      setResult(null);
                     }
+                  }}
+                  onFocus={() => {
+                    // Show dropdown on focus
                   }}
                 />
               </div>
               
-              {((searchTerm && filteredCompanies.length > 0) || (!searchTerm && companies.length > 0)) && (
-                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
-                  {(searchTerm ? filteredCompanies : companies.slice(0, 10)).map((company) => (
+              {((searchTerm && filteredCompanies.length > 0) || (!searchTerm && companies.length > 0)) && !selectedCompany && (
+                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                  {(searchTerm ? filteredCompanies : companies).map((company) => (
                     <button
                       key={company.id}
                       onClick={() => {
                         setSelectedCompany(company);
                         setSearchTerm(company.name);
+                        setResult(null); // Clear previous result when new company selected
                       }}
-                      className="w-full text-left px-6 py-4 hover:bg-slate-50 dark:hover:bg-navy-700 transition-colors border-b border-slate-100 dark:border-navy-700 last:border-0 dark:text-white"
+                      className="w-full text-left px-6 py-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors border-b border-slate-100 dark:border-navy-700 last:border-0 dark:text-white group"
                     >
                       <div className="flex justify-between items-center">
-                        <span>{company.name}</span>
+                        <span className="font-medium group-hover:text-emerald-500 transition-colors">{company.name}</span>
                         {company.oversubscription && (
-                          <span className="text-xs bg-indigo-500/10 text-indigo-500 px-2 py-1 rounded-md">
+                          <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-lg border border-emerald-500/20">
                             {company.oversubscription}x
                           </span>
                         )}
@@ -177,7 +187,7 @@ export const OversubscriptionChecker = ({ lang }) => {
             <button
               onClick={handleCheck}
               disabled={!selectedCompany || loading}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-navy-800 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2"
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-navy-800 text-white font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
             >
               {loading ? <RefreshCw className="animate-spin" /> : <Calculator size={20} />}
               {t.checkOversubscription}
