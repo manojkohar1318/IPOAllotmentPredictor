@@ -27,6 +27,7 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsOfService } from './components/TermsOfService';
 import { DisclaimerPage } from './components/DisclaimerPage';
 import { ContactPage } from './components/ContactPage';
+import { AdsterraNativeBanner } from './components/AdsterraNativeBanner';
 import { cn } from './types';
 import { DUMMY_IPOS } from './constants';
 import { db, ref, onValue } from './firebase';
@@ -239,6 +240,8 @@ function AppContent() {
           </div>
         </div>
       </section>
+
+      <AdsterraNativeBanner />
 
       {/* How It Works */}
       <section className="max-w-7xl mx-auto px-4">

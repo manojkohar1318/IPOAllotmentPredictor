@@ -21,6 +21,7 @@ import ReactConfetti from 'react-confetti';
 import html2canvas from 'html2canvas';
 import { db, ref, push, runTransaction } from '../firebase';
 import { FUNNY_COMMENTS } from '../utils/comments';
+import { AdsterraNativeBanner } from './AdsterraNativeBanner';
 
 export const Predictor = ({ lang, ipos, isDark }) => {
   const [step, setStep] = useState('form');
@@ -669,6 +670,8 @@ export const Predictor = ({ lang, ipos, isDark }) => {
                 </div>
               </div>
             </div>
+
+            <AdsterraNativeBanner />
 
             <div className="bg-gold-500/5 border border-gold-500/20 p-8 rounded-[2.5rem] flex items-start gap-6">
               <div className="w-12 h-12 bg-gold-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
