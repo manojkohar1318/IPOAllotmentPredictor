@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Database,
   Clock,
-  Calculator
+  Calculator,
+  RefreshCw
 } from 'lucide-react';
 import { SECTORS, DUMMY_IPOS } from '../constants';
 import { cn } from '../types';
@@ -91,6 +92,47 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
         console.error(err);
         alert('Failed to update countdown in Firebase.');
       });
+  };
+
+  const [isFetchingCDSC, setIsFetchingCDSC] = useState(false);
+
+  const fetchFromCDSC = async () => {
+    setIsFetchingCDSC(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/cdsc-companies');
+      if (!response.ok) throw new Error('Failed to fetch from CDSC');
+      const data = await response.json();
+      
+      if (data && data.body) {
+        // CDSC API returns { body: [{ id: 1, name: '...' }, ...] }
+        const companies = data.body;
+        
+        if (window.confirm(`Found ${companies.length} companies from CDSC. Would you like to add them to your oversubscription list? (Existing names will be skipped)`)) {
+          const overSubRef = ref(db, 'oversubscription');
+          
+          for (const company of companies) {
+            // Check if already exists in our list
+            const exists = overSubData.some(item => item.name === company.name);
+            if (!exists) {
+              const newRef = push(overSubRef);
+              await set(newRef, {
+                name: company.name,
+                issuedUnits: 1000000, // Default placeholder
+                appliedUnits: 0,      // Default placeholder
+                lastUpdated: new Date().toISOString()
+              });
+            }
+          }
+          alert('CDSC companies imported successfully!');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch data from CDSC. The API might be down or blocked.");
+    } finally {
+      setIsFetchingCDSC(false);
+    }
   };
 
   const handleOpenModal = (ipo) => {
@@ -295,12 +337,25 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
           <h2 className={cn("text-2xl font-bold flex items-center gap-2", isDark ? "text-white" : "text-slate-900")}>
             <Calculator className="text-indigo-500" /> Manage Oversubscription Data
           </h2>
-          <button 
-            onClick={() => handleOpenOverSubModal()}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" /> Add Data
-          </button>
+          <div className="flex gap-4">
+            <button 
+              onClick={fetchFromCDSC}
+              disabled={isFetchingCDSC}
+              className={cn(
+                "px-6 py-3 rounded-xl font-bold border transition-all flex items-center gap-2",
+                isDark ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-900"
+              )}
+            >
+              {isFetchingCDSC ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
+              Fetch from CDSC
+            </button>
+            <button 
+              onClick={() => handleOpenOverSubModal()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" /> Add Data
+            </button>
+          </div>
         </div>
 
         <div className="mb-6 relative">

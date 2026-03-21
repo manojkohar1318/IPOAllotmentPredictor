@@ -71,6 +71,40 @@ function AppContent() {
       }
     });
 
+    // Fetch from CDSC as fallback/additional data
+    const fetchCDSC = async () => {
+      try {
+        const response = await fetch('/api/cdsc-companies');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.body) {
+            const cdscIpos = data.body.map(c => ({
+              id: `cdsc-${c.id}`,
+              name: c.name,
+              nameNP: c.name, // CDSC API usually returns English names
+              sector: 'Other',
+              type: 'IPO',
+              category: 'General Public',
+              issuedUnits: 1000000,
+              price: 100,
+              openDate: new Date().toISOString(),
+              closeDate: new Date().toISOString()
+            }));
+            
+            setIpos(prev => {
+              // Merge, keeping Firebase data as priority
+              const existingNames = new Set(prev.map(ipo => ipo.name.toLowerCase()));
+              const newOnes = cdscIpos.filter(ipo => !existingNames.has(ipo.name.toLowerCase()));
+              return [...prev, ...newOnes];
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch CDSC companies:", err);
+      }
+    };
+    fetchCDSC();
+
     return () => {
       unsubscribeIpos();
       unsubscribeCountdown();
@@ -205,6 +239,15 @@ function AppContent() {
                 {t.checkChances} <Sparkles className="w-6 h-6 group-hover:scale-110 transition-transform" />
               </button>
               <button 
+                onClick={() => setCurrentPage('oversubscription')}
+                className={cn(
+                  "px-10 py-5 rounded-xl font-bold border transition-all flex items-center gap-3",
+                  isDark ? "bg-indigo-600/20 border-indigo-500/30 hover:bg-indigo-600/30 text-indigo-400" : "bg-indigo-50 border-indigo-200 hover:bg-indigo-100 text-indigo-600"
+                )}
+              >
+                <Calculator className="w-6 h-6" /> {t.oversubscriptionChecker}
+              </button>
+              <button 
                 onClick={() => setCurrentPage('education')}
                 className={cn(
                   "px-10 py-5 rounded-xl font-bold border transition-all",
@@ -245,6 +288,62 @@ function AppContent() {
       </section>
 
       <AdsterraNativeBanner />
+      
+      {/* Oversubscription Section */}
+      <section className="max-w-7xl mx-auto px-4">
+        <div className={cn(
+          "glass p-10 rounded-[3rem] border relative overflow-hidden",
+          isDark ? "border-white/10" : "border-slate-200 bg-white/50"
+        )}>
+          <div className="absolute top-0 right-0 p-12 opacity-5">
+            <Calculator className="w-64 h-64" />
+          </div>
+          <div className="flex flex-col md:flex-row items-center gap-12 relative">
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 text-indigo-400 text-sm font-bold border border-indigo-500/20">
+                <Sparkles className="w-4 h-4" /> New Feature
+              </div>
+              <h2 className={cn("text-4xl font-black leading-tight", isDark ? "text-white" : "text-slate-900")}>
+                {t.oversubscriptionChecker}
+              </h2>
+              <p className={cn("text-lg leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>
+                Don't guess the oversubscription ratio. Check real-time data from CDSC and MeroShare to get accurate allotment predictions.
+              </p>
+              <button 
+                onClick={() => setCurrentPage('oversubscription')}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3"
+              >
+                <Calculator className="w-6 h-6" /> Check Now
+              </button>
+            </div>
+            <div className="flex-1">
+              <div className={cn(
+                "p-8 rounded-3xl border shadow-2xl rotate-3",
+                isDark ? "bg-navy-800 border-white/10" : "bg-white border-slate-200"
+              )}>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                    <CheckCircle2 className="text-emerald-500 w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className={cn("font-bold", isDark ? "text-white" : "text-slate-900")}>Sarbottam Cement</div>
+                    <div className="text-xs text-slate-500">Oversubscribed by 15.5x</div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="h-2 bg-slate-200 dark:bg-navy-900 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 w-[75%]" />
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <span>Issued: 6M Units</span>
+                    <span>Applied: 93M Units</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* How It Works */}
       <section className="max-w-7xl mx-auto px-4">

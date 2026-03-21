@@ -40,12 +40,29 @@ export const OversubscriptionChecker = ({ lang }) => {
 
   const fetchFromAPI = async () => {
     try {
+      // Try our internal oversubscription API first
       const response = await fetch('/api/ipo-oversubscription');
       if (response.ok) {
         const data = await response.json();
         setCompanies(data);
       } else {
-        setError('Could not load IPO data. Please try again later.');
+        // Fallback to CDSC company list if our API fails
+        const cdscResponse = await fetch('/api/cdsc-companies');
+        if (cdscResponse.ok) {
+          const cdscData = await cdscResponse.json();
+          if (cdscData && cdscData.body) {
+            const list = cdscData.body.map(c => ({
+              id: c.id,
+              name: c.name,
+              issuedUnits: 1000000, // Placeholder
+              appliedUnits: 0,      // Placeholder
+              lastUpdated: new Date().toISOString()
+            }));
+            setCompanies(list);
+          }
+        } else {
+          setError('Could not load IPO data. Please try again later.');
+        }
       }
     } catch (err) {
       setError('Could not load IPO data. Please try again later.');

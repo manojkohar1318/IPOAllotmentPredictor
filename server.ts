@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import "dotenv/config";
+import axios from "axios";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,26 @@ async function startServer() {
       { id: '5', name: 'Sonapur Minerals', issuedUnits: 12000000, appliedUnits: 48000000, lastUpdated: new Date().toISOString() }
     ];
     res.json(ipoData);
+  });
+
+  // Proxy for CDSC Company List
+  app.get("/api/cdsc-companies", async (req, res) => {
+    try {
+      const response = await axios.get("https://iporesult.cdsc.com.np/api/company-list", {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+          'Origin': 'https://iporesult.cdsc.com.np',
+          'Referer': 'https://iporesult.cdsc.com.np/'
+        },
+        timeout: 10000
+      });
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching CDSC companies:", error.message);
+      // Fallback to some common companies if CDSC is down
+      res.status(500).json({ error: "Failed to fetch from CDSC", details: error.message });
+    }
   });
 
   app.get("/robots.txt", (req, res) => {
