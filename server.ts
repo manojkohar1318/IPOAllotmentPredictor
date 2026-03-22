@@ -54,24 +54,31 @@ async function startServer() {
     const fetchWithProxy = async (url: string, proxyName: string) => {
       const maxRetries = 2;
       for (let i = 0; i < maxRetries; i++) {
-        console.log(`Fetching from ${proxyName} (Attempt ${i + 1}):`, url);
-        // AllOrigins is notoriously slow, so we give it more time
+        console.log(`[SCRAPER] Fetching from ${proxyName} (Attempt ${i + 1}):`, url);
         const timeout = proxyName === "AllOrigins" ? 30000 : 15000;
         try {
           const response = await axios.get(url, { 
             timeout,
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             }
           });
-          if (proxyName === "AllOrigins") {
-            return response.data?.contents;
+          
+          let data = response.data;
+          if (proxyName === "AllOrigins" && typeof data === 'object' && data !== null) {
+            data = data.contents;
           }
-          return response.data;
+          
+          if (data && typeof data === 'string' && data.length > 500) {
+            console.log(`[SCRAPER] ${proxyName} success! Data length: ${data.length}`);
+            return data;
+          }
+          console.warn(`[SCRAPER] ${proxyName} returned invalid or short data:`, typeof data === 'string' ? data.substring(0, 100) : 'not a string');
         } catch (err) {
-          console.error(`${proxyName} attempt ${i + 1} failed:`, err.message);
+          console.error(`[SCRAPER] ${proxyName} attempt ${i + 1} failed:`, err.message);
           if (i < maxRetries - 1) {
-            await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
+            await new Promise(r => setTimeout(r, 1000));
           }
         }
       }
@@ -81,24 +88,45 @@ async function startServer() {
     try {
       let html = null;
 
-      // 1. Try CorsProxy.io
-      html = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, "CorsProxy.io");
+      // 1. Try Direct Fetch (Server-side)
+      console.log("[SCRAPER] Trying direct fetch...");
+      try {
+        const directResponse = await axios.get(targetUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          timeout: 10000
+        });
+        if (directResponse.data && directResponse.data.length > 1000) {
+          html = directResponse.data;
+          console.log("[SCRAPER] Direct fetch successful!");
+        }
+      } catch (err) {
+        console.log("[SCRAPER] Direct fetch failed, moving to proxies...");
+      }
 
-      // 2. Try AllOrigins
+      // 2. Try CorsProxy.io
       if (!html) {
-        await new Promise(r => setTimeout(r, 500)); // Small delay
+        html = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, "CorsProxy.io");
+      }
+
+      // 3. Try AllOrigins
+      if (!html) {
+        await new Promise(r => setTimeout(r, 500));
         html = await fetchWithProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, "AllOrigins");
       }
 
-      // 3. Try CodeTabs Proxy
+      // 4. Try CodeTabs Proxy
       if (!html) {
-        await new Promise(r => setTimeout(r, 500)); // Small delay
+        await new Promise(r => setTimeout(r, 500));
         html = await fetchWithProxy(`https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(targetUrl)}`, "CodeTabs");
       }
 
-      // 4. Try HTMLDriven Proxy
+      // 5. Try HTMLDriven Proxy
       if (!html) {
-        await new Promise(r => setTimeout(r, 500)); // Small delay
+        await new Promise(r => setTimeout(r, 500));
         html = await fetchWithProxy(`https://cors-proxy.htmldriven.com/?url=${encodeURIComponent(targetUrl)}`, "HTMLDriven");
       }
 
@@ -134,7 +162,10 @@ async function startServer() {
 
       if (html) {
         const $ = cheerio.load(html);
+        console.log("[SCRAPER] Parsing HTML...");
+        
         // CDSC ipolist table structure
+        // User requested: Name: Col 2 (td[1]), Issued: Col 4 (td[3]), Applied: Col 6 (td[5])
         $("table tr").each((i, el) => {
           const cols = $(el).find("td");
           if (cols.length >= 6) {
@@ -159,8 +190,9 @@ async function startServer() {
           }
         });
 
-        // Fallback indices if primary fails
+        // Fallback for different table structure (sometimes 5 columns)
         if (ipos.length === 0) {
+          console.log("[SCRAPER] Primary structure failed, trying fallback structure...");
           $("table tr").each((i, el) => {
             const cols = $(el).find("td");
             if (cols.length >= 5) {
@@ -183,6 +215,8 @@ async function startServer() {
             }
           });
         }
+      } else {
+        console.error("[SCRAPER] All fetch attempts failed.");
       }
 
       // Final Fallback: If no IPOs found or all fetches failed, return mock data
