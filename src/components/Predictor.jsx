@@ -17,7 +17,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
-import { cn } from '../types';
+import { cn } from '../cn';
 import ReactConfetti from 'react-confetti';
 import html2canvas from 'html2canvas';
 import { db, ref, push, runTransaction, get } from '../firebase';

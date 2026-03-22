@@ -13,49 +13,49 @@ export const OversubscriptionChecker = ({ lang }) => {
   const [error, setError] = useState(null);
   const t = TRANSLATIONS[lang];
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Fetch live data from CDSC scraper first
-        const liveResponse = await fetch('/api/live-oversubscription');
-        if (liveResponse.ok) {
-          const liveData = await liveResponse.json();
-          if (liveData && liveData.length > 0) {
-            setCompanies(liveData);
-            setLoading(false);
-            return; // Use live data if available
-          }
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch live data from CDSC scraper first
+      const liveResponse = await fetch('/api/live-oversubscription');
+      if (liveResponse.ok) {
+        const liveData = await liveResponse.json();
+        if (liveData && liveData.length > 0) {
+          setCompanies(liveData);
+          setLoading(false);
+          return; // Use live data if available
         }
-        
-        // Fallback to Firebase if live fetch fails or is empty
-        const overSubRef = ref(db, 'oversubscription');
-        onValue(overSubRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            const list = Object.keys(data).map(key => ({
-              id: key,
-              ...data[key]
-            }));
-            setCompanies(list);
-          } else {
-            fetchFromAPI(); // Final fallback
-          }
-          setLoading(false);
-        }, (err) => {
-          console.error(err);
-          fetchFromAPI();
-          setLoading(false);
-        });
-      } catch (err) {
-        console.error("Error loading data:", err);
+      }
+      
+      // Fallback to Firebase if live fetch fails or is empty
+      const overSubRef = ref(db, 'oversubscription');
+      onValue(overSubRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const list = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          }));
+          setCompanies(list);
+        } else {
+          fetchFromAPI(); // Final fallback
+        }
+        setLoading(false);
+      }, (err) => {
+        console.error(err);
         fetchFromAPI();
         setLoading(false);
-      }
-    };
+      });
+    } catch (err) {
+      console.error("Error loading data:", err);
+      fetchFromAPI();
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -87,9 +87,19 @@ export const OversubscriptionChecker = ({ lang }) => {
     });
   };
 
+  const handleRefresh = () => {
+    setCompanies([]);
+    setResult(null);
+    setSelectedCompany(null);
+    setSearchTerm('');
+    loadData();
+  };
+
   const filteredCompanies = companies.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const showDropdown = !selectedCompany && (searchTerm || companies.length > 0);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -120,15 +130,12 @@ export const OversubscriptionChecker = ({ lang }) => {
               </div>
             </div>
             <button 
-              onClick={() => {
-                setCompanies([]);
-                setLoading(true);
-                window.location.reload();
-              }}
-              className="p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-navy-800 transition-all text-slate-500"
+              onClick={handleRefresh}
+              className="p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-navy-800 transition-all text-slate-500 flex items-center gap-2"
               title="Refresh Data"
             >
               <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+              <span className="text-xs font-bold hidden sm:inline">Refresh Data</span>
             </button>
           </div>
 
@@ -142,8 +149,8 @@ export const OversubscriptionChecker = ({ lang }) => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
                   type="text"
-                  placeholder="-- Select Current IPO --"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all dark:text-white font-medium"
+                  placeholder={loading ? "Loading IPO data..." : "-- Select Current IPO --"}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-slate-900 dark:text-white font-medium"
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -152,34 +159,48 @@ export const OversubscriptionChecker = ({ lang }) => {
                       setResult(null);
                     }
                   }}
-                  onFocus={() => {
-                    // Show dropdown on focus
-                  }}
                 />
               </div>
               
-              {((searchTerm && filteredCompanies.length > 0) || (!searchTerm && companies.length > 0)) && !selectedCompany && (
+              {showDropdown && (
                 <div className="absolute z-10 w-full mt-2 bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden custom-scrollbar">
-                  {(searchTerm ? filteredCompanies : companies).map((company) => (
-                    <button
-                      key={company.id}
-                      onClick={() => {
-                        setSelectedCompany(company);
-                        setSearchTerm(company.name);
-                        setResult(null); // Clear previous result when new company selected
-                      }}
-                      className="w-full text-left px-6 py-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors border-b border-slate-100 dark:border-navy-700 last:border-0 dark:text-white group"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium group-hover:text-emerald-500 transition-colors">{company.name}</span>
-                        {company.oversubscription && (
-                          <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-lg border border-emerald-500/20">
-                            {company.oversubscription}x
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                  {companies.length === 0 && !loading ? (
+                    <div className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                      <AlertCircle className="mx-auto mb-2 opacity-20" size={32} />
+                      <p className="text-sm font-medium">No active IPOs found at the moment.</p>
+                      <button 
+                        onClick={handleRefresh}
+                        className="mt-2 text-emerald-500 text-xs font-bold hover:underline"
+                      >
+                        Try Refreshing
+                      </button>
+                    </div>
+                  ) : filteredCompanies.length === 0 && searchTerm ? (
+                    <div className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
+                      No matching companies found for "{searchTerm}"
+                    </div>
+                  ) : (
+                    (searchTerm ? filteredCompanies : companies).map((company) => (
+                      <button
+                        key={company.id}
+                        onClick={() => {
+                          setSelectedCompany(company);
+                          setSearchTerm(company.name);
+                          setResult(null);
+                        }}
+                        className="w-full text-left px-6 py-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors border-b border-slate-100 dark:border-navy-700 last:border-0 group"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">{company.name}</span>
+                          {company.oversubscription && (
+                            <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-lg border border-emerald-500/20">
+                              {company.oversubscription}x
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -233,11 +254,11 @@ export const OversubscriptionChecker = ({ lang }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-4 bg-white dark:bg-navy-800 rounded-2xl border border-slate-100 dark:border-navy-700">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t.totalIssuedUnits}</p>
-                    <p className="text-lg font-bold dark:text-white">{result.issued}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">{result.issued}</p>
                   </div>
                   <div className="p-4 bg-white dark:bg-navy-800 rounded-2xl border border-slate-100 dark:border-navy-700">
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t.totalAppliedUnits}</p>
-                    <p className="text-lg font-bold dark:text-white">{result.applied}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">{result.applied}</p>
                   </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { TRANSLATIONS } from '../constants';
 
-import { cn } from '../types';
+import { cn } from '../cn';
 
 export const PrivacyPolicy = ({ lang, isDark }) => {
   const t = TRANSLATIONS[lang];

@@ -10,6 +10,7 @@ import {
   X,
   MessageCircle,
   Clock,
+  RefreshCw,
   AlertTriangle,
   Facebook,
   Twitter,
@@ -44,10 +45,26 @@ function AppContent() {
     company: 'Sarbottam Cement',
     targetDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
   const t = TRANSLATIONS[lang];
 
   // Fetch data from Firebase and Live Scraper
+  const fetchLiveOversubscription = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/live-oversubscription');
+      if (response.ok) {
+        const data = await response.json();
+        setLiveOversubscription(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch live oversubscription:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     const iposRef = ref(db, 'ipos');
     const unsubscribeIpos = onValue(iposRef, (snapshot) => {
@@ -71,18 +88,6 @@ function AppContent() {
       }
     });
 
-    // Fetch live oversubscription data
-    const fetchLiveOversubscription = async () => {
-      try {
-        const response = await fetch('/api/live-oversubscription');
-        if (response.ok) {
-          const data = await response.json();
-          setLiveOversubscription(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch live oversubscription:", err);
-      }
-    };
     fetchLiveOversubscription();
 
     // Fetch from CDSC as fallback/additional data
@@ -316,9 +321,23 @@ function AppContent() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 text-indigo-400 text-sm font-bold border border-indigo-500/20">
                 <Sparkles className="w-4 h-4" /> New Feature
               </div>
-              <h2 className={cn("text-4xl font-black leading-tight", isDark ? "text-white" : "text-slate-900")}>
-                {t.oversubscriptionChecker}
-              </h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className={cn("text-4xl font-black leading-tight", isDark ? "text-white" : "text-slate-900")}>
+                  {t.oversubscriptionChecker}
+                </h2>
+                <button 
+                  onClick={fetchLiveOversubscription}
+                  disabled={isRefreshing}
+                  className={cn(
+                    "p-3 rounded-xl transition-all flex items-center gap-2",
+                    isDark ? "bg-white/5 hover:bg-white/10 text-slate-400" : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                  )}
+                  title="Refresh Data"
+                >
+                  <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
+                  <span className="text-xs font-bold hidden sm:inline">Refresh Data</span>
+                </button>
+              </div>
               <p className={cn("text-lg leading-relaxed", isDark ? "text-slate-400" : "text-slate-500")}>
                 Don't guess the oversubscription ratio. Check real-time data from CDSC and MeroShare to get accurate allotment predictions.
               </p>
@@ -482,8 +501,8 @@ function AppContent() {
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <Clock className="w-32 h-32" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Next Major IPO Result Countdown</h2>
-          <p className="text-emerald-200 font-black text-3xl mb-8 uppercase tracking-wider">{countdownData.company}</p>
+          <h2 className="text-2xl font-bold mb-2 text-white">Next Major IPO Result Countdown</h2>
+          <p className="text-white font-black text-3xl mb-8 uppercase tracking-wider">{countdownData.company}</p>
           <div className="flex justify-center gap-4 sm:gap-8">
             {[
               { label: 'Days', value: timeLeft.d },

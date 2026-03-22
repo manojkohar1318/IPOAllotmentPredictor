@@ -49,62 +49,62 @@ async function startServer() {
 
   // Live Oversubscription Scraper from CDSC ipolist
   app.get("/api/live-oversubscription", async (req, res) => {
-    try {
-      const targetUrl = "https://cdsc.com.np/ipolist";
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-      
-      console.log("Fetching from AllOrigins:", proxyUrl);
-      const response = await axios.get(proxyUrl, { timeout: 25000 });
-      
-      if (!response.data || !response.data.contents) {
-        throw new Error("Invalid response from AllOrigins proxy");
-      }
+    const targetUrl = "https://cdsc.com.np/ipolist";
+    const proxies = [
+      `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+    ];
 
-      const html = response.data.contents;
-      const $ = cheerio.load(html);
-      
-      const ipos = [];
-      // CDSC ipolist table structure as per user request:
-      // Company Name: Column 2 (td[1])
-      // Issued Units: Column 4 (td[3])
-      // Applied Units: Column 6 (td[5])
-      $("table tr").each((i, el) => {
-        const cols = $(el).find("td");
-        if (cols.length >= 6) {
-          const name = $(cols[1]).text().trim();
-          const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
-          const appliedText = $(cols[5]).text().trim().replace(/,/g, '');
-          
-          const issuedUnit = parseFloat(issuedText);
-          const appliedUnit = parseFloat(appliedText);
-          
-          if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
-            ipos.push({
-              id: `scraped-${i}`,
-              name,
-              issuedUnits: issuedUnit,
-              appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
-              oversubscription: (appliedUnit > 0 && issuedUnit > 0) ? (appliedUnit / issuedUnit).toFixed(2) : "0.00",
-              lastUpdated: new Date().toISOString()
-            });
+    let lastError = null;
+
+    for (const proxyUrl of proxies) {
+      try {
+        console.log(`Fetching from proxy: ${proxyUrl}`);
+        const response = await axios.get(proxyUrl, { 
+          timeout: 15000,
+          responseType: 'text',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
           }
+        });
+        
+        const html = response.data;
+        if (!html || typeof html !== 'string') {
+          console.warn(`Empty or invalid HTML from ${proxyUrl}`);
+          continue;
         }
-      });
-      
-      if (ipos.length === 0) {
-        console.log("No IPOs found with primary logic, trying fallback indices...");
-        // Fallback in case column structure is slightly different (e.g. if Applied is in col 5 instead of 6)
-        $("table tr").each((i, el) => {
+
+        const $ = cheerio.load(html);
+        const ipos = [];
+
+        // Try to find any table first
+        const table = $("table");
+        if (table.length === 0) {
+          console.warn(`No table found in HTML from ${proxyUrl}`);
+          continue;
+        }
+        
+        table.find("tr").each((i, el) => {
           const cols = $(el).find("td");
-          if (cols.length >= 5 && ipos.length === 0) {
+          if (cols.length >= 5) {
             const name = $(cols[1]).text().trim();
-            const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
-            const appliedText = $(cols[4]).text().trim().replace(/,/g, '');
+            // Try to find issued units and applied units
+            // Sometimes they might be in different columns if the table structure varies
+            // We'll try the requested indices first (2nd, 4th, 6th)
+            let issuedText = $(cols[3]).text().trim().replace(/,/g, '');
+            let appliedText = $(cols[5]).text().trim().replace(/,/g, '');
+            
+            // If 6th column is empty, try 5th (some tables have SN, Name, Sector, Issued, Applied)
+            if (!appliedText && cols.length >= 5) {
+              appliedText = $(cols[4]).text().trim().replace(/,/g, '');
+            }
+
             const issuedUnit = parseFloat(issuedText);
             const appliedUnit = parseFloat(appliedText);
-            if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
+            
+            if (name && name.length > 2 && !isNaN(issuedUnit) && issuedUnit > 0) {
               ipos.push({
-                id: `fallback-${i}`,
+                id: `scraped-${i}-${Math.random().toString(36).substr(2, 5)}`,
                 name,
                 issuedUnits: issuedUnit,
                 appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
@@ -114,18 +114,23 @@ async function startServer() {
             }
           }
         });
-      }
 
-      console.log(`Scraped ${ipos.length} IPOs from CDSC via AllOrigins`);
-      res.json(ipos);
-    } catch (error) {
-      console.error("Scraping error:", error.message);
-      res.status(500).json({ 
-        error: "Failed to scrape IPO data", 
-        details: error.message,
-        fallback: true 
-      });
+        if (ipos.length > 0) {
+          console.log(`Successfully scraped ${ipos.length} IPOs using ${proxyUrl}`);
+          return res.json(ipos);
+        }
+        
+        console.warn(`No IPOs found using ${proxyUrl}, trying next proxy if available...`);
+      } catch (error) {
+        console.error(`Error with proxy ${proxyUrl}:`, error.message);
+        lastError = error;
+      }
     }
+
+    res.status(500).json({ 
+      error: "Failed to scrape IPO data from all proxies", 
+      details: lastError ? lastError.message : "Unknown error"
+    });
   });
 
   app.get("/robots.txt", (req, res) => {

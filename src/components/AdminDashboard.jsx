@@ -507,9 +507,9 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
             <tbody className={cn("divide-y", isDark ? "divide-white/5" : "divide-slate-100")}>
               {filteredOverSub.map((item) => (
                 <tr key={item.id} className={cn("transition-colors", isDark ? "hover:bg-white/5" : "hover:bg-slate-50")}>
-                  <td className="px-6 py-4 font-bold dark:text-white">{item.name}</td>
-                  <td className="px-6 py-4 dark:text-slate-300">{item.issuedUnits.toLocaleString()}</td>
-                  <td className="px-6 py-4 dark:text-slate-300">{item.appliedUnits.toLocaleString()}</td>
+                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{item.name}</td>
+                  <td className="px-6 py-4 text-slate-700 dark:text-slate-300">{item.issuedUnits.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-slate-700 dark:text-slate-300">{item.appliedUnits.toLocaleString()}</td>
                   <td className="px-6 py-4 font-bold text-indigo-500">{(item.appliedUnits / item.issuedUnits).toFixed(2)}x</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
