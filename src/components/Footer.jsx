@@ -9,7 +9,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
-import { cn } from '../cn';
+import { cn } from '../types';
 
 export const Footer = ({ lang, setCurrentPage, isDark }) => {
   const t = TRANSLATIONS[lang];

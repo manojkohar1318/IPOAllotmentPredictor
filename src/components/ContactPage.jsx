@@ -9,7 +9,7 @@ import {
   Phone
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
-import { cn } from '../cn';
+import { cn } from '../types';
 
 export const ContactPage = ({ lang, isDark }) => {
   const t = TRANSLATIONS[lang];

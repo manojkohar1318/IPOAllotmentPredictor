@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Search, Calculator, Clock, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { db, ref, onValue } from '../firebase';
-import { cn } from '../cn';
 
 export const OversubscriptionChecker = ({ lang }) => {
   const [companies, setCompanies] = useState([]);
@@ -20,19 +19,18 @@ export const OversubscriptionChecker = ({ lang }) => {
       setError(null);
       
       try {
-        console.log("Fetching live data...");
+        // Fetch live data from CDSC scraper first
         const liveResponse = await fetch('/api/live-oversubscription');
         if (liveResponse.ok) {
           const liveData = await liveResponse.json();
-          console.log("Live data received:", liveData);
           if (liveData && liveData.length > 0) {
             setCompanies(liveData);
             setLoading(false);
-            return;
+            return; // Use live data if available
           }
         }
         
-        console.log("Live data failed or empty, trying Firebase...");
+        // Fallback to Firebase if live fetch fails or is empty
         const overSubRef = ref(db, 'oversubscription');
         onValue(overSubRef, (snapshot) => {
           const data = snapshot.val();
@@ -42,18 +40,19 @@ export const OversubscriptionChecker = ({ lang }) => {
               ...data[key]
             }));
             setCompanies(list);
-            setLoading(false);
           } else {
-            console.log("Firebase empty, trying API...");
-            fetchFromAPI();
+            fetchFromAPI(); // Final fallback
           }
+          setLoading(false);
         }, (err) => {
-          console.error("Firebase error:", err);
+          console.error(err);
           fetchFromAPI();
+          setLoading(false);
         });
       } catch (err) {
-        console.error("Error in loadData:", err);
+        console.error("Error loading data:", err);
         fetchFromAPI();
+        setLoading(false);
       }
     };
 
@@ -62,6 +61,7 @@ export const OversubscriptionChecker = ({ lang }) => {
 
   const fetchFromAPI = async () => {
     try {
+      // Try our internal oversubscription API
       const response = await fetch('/api/ipo-oversubscription');
       if (response.ok) {
         const data = await response.json();
@@ -71,8 +71,6 @@ export const OversubscriptionChecker = ({ lang }) => {
       }
     } catch (err) {
       setError('Could not load IPO data. Please try again later.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -111,27 +109,13 @@ export const OversubscriptionChecker = ({ lang }) => {
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
                     {t.oversubscriptionChecker}
                   </h2>
-                  {companies.length > 0 && (
-                    <div className={cn(
-                      "flex items-center gap-1.5 px-2 py-1 border rounded-full",
-                      companies[0].isLive 
-                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
-                        : "bg-amber-500/10 border-amber-500/20 text-amber-500"
-                    )}>
-                      <span className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        companies[0].isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                      )} />
-                      <span className="text-[10px] font-black uppercase tracking-wider">
-                        {companies[0].isLive ? "Live" : "Estimated"}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">Live</span>
+                  </div>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400">
-                  {companies.length > 0 && !companies[0].isLive 
-                    ? "Live data unavailable. Showing recent estimates." 
-                    : "Real-time data synced from CDSC ipolist"}
+                  Real-time data synced from CDSC ipolist
                 </p>
               </div>
             </div>
@@ -169,21 +153,12 @@ export const OversubscriptionChecker = ({ lang }) => {
                     }
                   }}
                   onFocus={() => {
-                    setSearchTerm('');
-                    setSelectedCompany(null);
-                    setResult(null);
+                    // Show dropdown on focus
                   }}
                 />
               </div>
               
-              {loading && !selectedCompany && (
-                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl p-8 text-center shadow-2xl">
-                  <RefreshCw className="animate-spin mx-auto mb-2 text-emerald-500" />
-                  <p className="text-sm text-slate-500">Fetching live IPO data...</p>
-                </div>
-              )}
-
-              {((searchTerm && filteredCompanies.length > 0) || (!searchTerm && companies.length > 0)) && !selectedCompany && !loading && (
+              {((searchTerm && filteredCompanies.length > 0) || (!searchTerm && companies.length > 0)) && !selectedCompany && (
                 <div className="absolute z-10 w-full mt-2 bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden custom-scrollbar">
                   {(searchTerm ? filteredCompanies : companies).map((company) => (
                     <button

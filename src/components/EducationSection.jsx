@@ -18,7 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
-import { cn } from '../cn';
+import { cn } from '../types';
 
 export const EducationSection = ({ lang, isDark }) => {
   const t = TRANSLATIONS[lang];

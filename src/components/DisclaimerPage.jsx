@@ -1,7 +1,7 @@
 import React from 'react';
 import { TRANSLATIONS } from '../constants';
 
-import { cn } from '../cn';
+import { cn } from '../types';
 
 export const DisclaimerPage = ({ lang, isDark }) => {
   const t = TRANSLATIONS[lang];

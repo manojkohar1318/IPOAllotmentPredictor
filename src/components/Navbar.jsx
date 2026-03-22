@@ -15,7 +15,7 @@ import {
   Calculator
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
-import { cn } from '../cn';
+import { cn } from '../types';
 
 export const Navbar = ({ lang, setLang, currentPage, setCurrentPage, isDark, setIsDark }) => {
   const [isScrolled, setIsScrolled] = useState(false);

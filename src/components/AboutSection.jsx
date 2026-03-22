@@ -13,7 +13,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
-import { cn } from '../cn';
+import { cn } from '../types';
 
 export const AboutSection = ({ lang, isDark }) => {
   const t = TRANSLATIONS[lang];
