@@ -53,8 +53,10 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     setIsFetchingLive(true);
     try {
       const response = await fetch('/api/ipo-list');
+      console.log("Response from /api/ipo-list (Admin):", response);
       if (response.ok) {
         const result = await response.json();
+        console.log("Data from /api/ipo-list (Admin):", result);
         if (result.success) {
           setLiveOverSubData(result.data);
         }

@@ -54,8 +54,10 @@ function AppContent() {
     setIsRefreshing(true);
     try {
       const response = await fetch('/api/ipo-list');
+      console.log("Response from /api/ipo-list:", response);
       if (response.ok) {
         const result = await response.json();
+        console.log("Data from /api/ipo-list:", result);
         if (result.success) {
           setLiveOversubscription(result.data);
         }

@@ -75,8 +75,10 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
       
       // Try our new robust IPO list API first
       const liveResponse = await fetch('/api/ipo-list');
+      console.log("Response from /api/ipo-list (AutoFill):", liveResponse);
       if (liveResponse.ok) {
         const result = await liveResponse.json();
+        console.log("Data from /api/ipo-list (AutoFill):", result);
         if (result.success) {
           data = result.data;
         }
