@@ -1,0 +1,11 @@
+src/App.jsx
+src/components/AboutSection.jsx
+src/components/AdminDashboard.jsx
+src/components/ContactPage.jsx
+src/components/DisclaimerPage.jsx
+src/components/EducationSection.jsx
+src/components/Footer.jsx
+src/components/Navbar.jsx
+src/components/Predictor.jsx
+src/components/PrivacyPolicy.jsx
+src/components/TermsOfService.jsx

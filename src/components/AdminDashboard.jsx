@@ -15,7 +15,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { SECTORS, DUMMY_IPOS } from '../constants';
-import { cn } from '../types';
+import { cn } from '../cn';
 import { db, ref, set, push, update, remove } from '../firebase';
 
 export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdownData, isDark }) => {

@@ -543,7 +543,7 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
                       className="text-xs text-indigo-500 hover:text-indigo-400 font-bold transition-colors flex items-center gap-1"
                     >
                       <Calculator size={14} />
-                      Don't know it? [Click to Check]
+                      Don't know oversubscription? [Click to check live]
                     </button>
                   </div>
 

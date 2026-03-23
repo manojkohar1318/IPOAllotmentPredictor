@@ -31,7 +31,7 @@ import { DisclaimerPage } from './components/DisclaimerPage';
 import { ContactPage } from './components/ContactPage';
 import { OversubscriptionChecker } from './components/OversubscriptionChecker';
 import { AdsterraNativeBanner } from './components/AdsterraNativeBanner';
-import { cn } from './types';
+import { cn } from './cn';
 import { DUMMY_IPOS } from './constants';
 import { db, ref, onValue } from './firebase';
 

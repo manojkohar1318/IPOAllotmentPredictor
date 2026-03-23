@@ -50,61 +50,52 @@ async function startServer() {
   // Live Oversubscription Scraper from CDSC ipolist
   app.get("/api/live-oversubscription", async (req, res) => {
     const targetUrl = "https://cdsc.com.np/ipolist";
-    const proxies = [
-      `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+    
+    // Try direct fetch first (server-side doesn't need CORS proxy)
+    // Then fall back to proxies if direct fetch fails (sometimes cloud IPs are blocked)
+    const urls = [
+      targetUrl,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+      `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`
     ];
-
+    
     let lastError = null;
 
-    for (const proxyUrl of proxies) {
+    for (const url of urls) {
       try {
-        console.log(`Fetching from proxy: ${proxyUrl}`);
-        const response = await axios.get(proxyUrl, { 
+        console.log(`Fetching from: ${url}`);
+        const response = await axios.get(url, { 
           timeout: 15000,
           responseType: 'text',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           }
         });
         
         const html = response.data;
-        if (!html || typeof html !== 'string') {
-          console.warn(`Empty or invalid HTML from ${proxyUrl}`);
-          continue;
-        }
+        if (!html || typeof html !== 'string') continue;
 
         const $ = cheerio.load(html);
         const ipos = [];
 
-        // Try to find any table first
-        const table = $("table");
-        if (table.length === 0) {
-          console.warn(`No table found in HTML from ${proxyUrl}`);
-          continue;
-        }
-        
-        table.find("tr").each((i, el) => {
+        $("table tr").each((i, el) => {
           const cols = $(el).find("td");
-          if (cols.length >= 5) {
+          if (cols.length >= 6) {
+            // User requested: Col 2 (Name), Col 4 (Issued), Col 6 (Applied)
             const name = $(cols[1]).text().trim();
-            // Try to find issued units and applied units
-            // Sometimes they might be in different columns if the table structure varies
-            // We'll try the requested indices first (2nd, 4th, 6th)
-            let issuedText = $(cols[3]).text().trim().replace(/,/g, '');
-            let appliedText = $(cols[5]).text().trim().replace(/,/g, '');
-            
-            // If 6th column is empty, try 5th (some tables have SN, Name, Sector, Issued, Applied)
-            if (!appliedText && cols.length >= 5) {
-              appliedText = $(cols[4]).text().trim().replace(/,/g, '');
-            }
+            const issuedText = $(cols[3]).text().trim().replace(/,/g, '');
+            const appliedText = $(cols[5]).text().trim().replace(/,/g, '');
 
             const issuedUnit = parseFloat(issuedText);
             const appliedUnit = parseFloat(appliedText);
             
-            if (name && name.length > 2 && !isNaN(issuedUnit) && issuedUnit > 0) {
+            if (name && !isNaN(issuedUnit) && issuedUnit > 0) {
               ipos.push({
-                id: `scraped-${i}-${Math.random().toString(36).substr(2, 5)}`,
+                id: `scraped-${i}`,
                 name,
                 issuedUnits: issuedUnit,
                 appliedUnits: isNaN(appliedUnit) ? 0 : appliedUnit,
@@ -116,20 +107,19 @@ async function startServer() {
         });
 
         if (ipos.length > 0) {
-          console.log(`Successfully scraped ${ipos.length} IPOs using ${proxyUrl}`);
           return res.json(ipos);
         }
-        
-        console.warn(`No IPOs found using ${proxyUrl}, trying next proxy if available...`);
       } catch (error) {
-        console.error(`Error with proxy ${proxyUrl}:`, error.message);
+        console.error(`Error with URL ${url}:`, error.message);
         lastError = error;
+        // Wait a bit before next try
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
     res.status(500).json({ 
-      error: "Failed to scrape IPO data from all proxies", 
-      details: lastError ? lastError.message : "Unknown error"
+      error: "Failed to fetch IPO data", 
+      details: lastError ? lastError.message : "No data found"
     });
   });
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Calculator, Clock, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
+import { cn } from '../cn';
 import { db, ref, onValue } from '../firebase';
 
 export const OversubscriptionChecker = ({ lang }) => {
@@ -229,14 +230,24 @@ export const OversubscriptionChecker = ({ lang }) => {
                 className="mt-12 p-8 bg-slate-50 dark:bg-navy-800/50 rounded-3xl border border-slate-200 dark:border-navy-700"
               >
                 <div className="text-center mb-8">
-                  <p className="text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider font-semibold mb-2">
-                    {t.oversubscribedBy}
+                  <p className="text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider font-bold mb-4">
+                    {t.oversubscribedBy || 'Oversubscription Result'}
                   </p>
-                  <div className="text-5xl md:text-6xl font-black text-indigo-600 dark:text-indigo-400 mb-2">
+                  
+                  <div className={cn(
+                    "inline-block px-8 py-4 rounded-3xl text-5xl md:text-7xl font-black mb-6 shadow-xl",
+                    parseFloat(result.ratio) >= 1 
+                      ? "bg-emerald-500 text-white shadow-emerald-500/20" 
+                      : "bg-orange-500 text-white shadow-orange-500/20"
+                  )}>
                     {result.ratio}x
                   </div>
-                  <p className="text-slate-600 dark:text-slate-300 font-medium">
-                    {t.times}
+                  
+                  <p className={cn(
+                    "text-xl font-bold uppercase tracking-widest",
+                    parseFloat(result.ratio) >= 1 ? "text-emerald-500" : "text-orange-500"
+                  )}>
+                    {parseFloat(result.ratio) >= 1 ? 'Oversubscribed' : 'Under-subscribed'}
                   </p>
                 </div>
 
@@ -246,7 +257,10 @@ export const OversubscriptionChecker = ({ lang }) => {
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${result.percentage}%` }}
-                      className="h-full bg-indigo-600 dark:bg-indigo-500"
+                      className={cn(
+                        "h-full transition-all duration-1000",
+                        parseFloat(result.ratio) >= 1 ? "bg-emerald-500" : "bg-orange-500"
+                      )}
                     />
                   </div>
                 </div>

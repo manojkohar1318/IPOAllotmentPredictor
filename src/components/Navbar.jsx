@@ -29,9 +29,9 @@ export const Navbar = ({ lang, setLang, currentPage, setCurrentPage, isDark, set
   }, []);
 
   const navLinks = [
-    { id: 'home', label: t.home, icon: Home },
-    { id: 'predictor', label: t.predictor, icon: TrendingUp },
-    { id: 'oversubscription', label: 'IPO Checker', icon: Calculator },
+    { id: 'home', label: 'Dashboard', icon: Home },
+    { id: 'oversubscription', label: 'Oversubscription Checker', icon: Calculator },
+    { id: 'predictor', label: 'Allotment Predictor', icon: TrendingUp },
     { id: 'education', label: t.education, icon: BookOpen },
     { id: 'about', label: t.about, icon: Info },
     { id: 'contact', label: 'Contact', icon: Phone },
