@@ -48,6 +48,94 @@ async function startServer() {
     }
   });
 
+  // Single IPO Result Check
+  app.post("/api/check-ipo-result", async (req, res) => {
+    const { companyShareId, boid } = req.body;
+    
+    if (!companyShareId || !boid) {
+      return res.status(400).json({ success: false, message: "Missing companyShareId or boid" });
+    }
+
+    try {
+      const response = await axios.post("https://iporesult.cdsc.com.np/api/check-result", {
+        companyShareId,
+        boid
+      }, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Origin': 'https://iporesult.cdsc.com.np',
+          'Referer': 'https://iporesult.cdsc.com.np/'
+        },
+        timeout: 10000
+      });
+
+      res.json({
+        success: true,
+        status: response.data.success ? "Allotted" : "Not Allotted",
+        units: response.data.allotmentQuantity || 0,
+        message: response.data.message
+      });
+    } catch (error) {
+      console.error("Error checking IPO result:", error.message);
+      res.status(500).json({ success: false, message: "Failed to check result from CDSC", details: error.message });
+    }
+  });
+
+  // Bulk IPO Result Check
+  app.post("/api/check-bulk-ipo-result", async (req, res) => {
+    const { companyShareId, boids } = req.body;
+    
+    if (!companyShareId || !boids || !Array.isArray(boids)) {
+      return res.status(400).json({ success: false, message: "Missing companyShareId or boids array" });
+    }
+
+    const results = [];
+    
+    // Process BOIDs one by one with delay
+    for (const boid of boids) {
+      try {
+        const response = await axios.post("https://iporesult.cdsc.com.np/api/check-result", {
+          companyShareId,
+          boid
+        }, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Origin': 'https://iporesult.cdsc.com.np',
+            'Referer': 'https://iporesult.cdsc.com.np/'
+          },
+          timeout: 10000
+        });
+
+        results.push({
+          boid,
+          status: response.data.success ? "Allotted" : "Not Allotted",
+          units: response.data.allotmentQuantity || 0,
+          message: response.data.message
+        });
+      } catch (error) {
+        console.error(`Error checking result for BOID ${boid}:`, error.message);
+        results.push({
+          boid,
+          status: "Error",
+          units: 0,
+          message: "Failed to fetch"
+        });
+      }
+
+      // Add delay: 2–3 seconds between requests as requested
+      await new Promise(resolve => setTimeout(resolve, 2500));
+    }
+
+    res.json({
+      success: true,
+      results
+    });
+  });
+
   // Live IPO List Scraper from CDSC Nepal
   app.get("/api/ipo-list", ipoListHandler);
 

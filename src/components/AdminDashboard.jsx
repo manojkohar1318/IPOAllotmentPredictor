@@ -18,7 +18,19 @@ import {
 } from 'lucide-react';
 import { SECTORS, DUMMY_IPOS } from '../constants';
 import { cn } from '../cn';
-import { db, ref, set, push, update, remove, onValue } from '../firebase';
+import { 
+  firestore, 
+  collection, 
+  doc, 
+  setDoc, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  serverTimestamp,
+  handleFirestoreError,
+  OperationType 
+} from '../firebase';
 
 export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdownData, isDark, liveOversubscription = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,21 +45,19 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
   const [isFetchingLive, setIsFetchingLive] = useState(false);
 
   useEffect(() => {
-    const overSubRef = ref(db, 'oversubscription');
-    onValue(overSubRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key]
-        }));
-        setOverSubData(list);
-      } else {
-        setOverSubData([]);
-      }
+    const overSubCollection = collection(firestore, 'oversubscription');
+    const unsubscribeOverSub = onSnapshot(overSubCollection, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setOverSubData(list);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'oversubscription');
     });
 
     fetchLiveOversubscription();
+    return () => unsubscribeOverSub();
   }, []);
 
   const fetchLiveOversubscription = async () => {
@@ -110,13 +120,13 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
       targetDate: new Date(countdownForm.targetDate).toISOString()
     };
     
-    set(ref(db, 'countdown'), newCountdown)
+    const countdownDoc = doc(firestore, 'countdown', 'main');
+    setDoc(countdownDoc, newCountdown)
       .then(() => {
         alert('Countdown updated in Firebase successfully!');
       })
       .catch(err => {
-        console.error(err);
-        alert('Failed to update countdown in Firebase.');
+        handleFirestoreError(err, OperationType.WRITE, 'countdown/main');
       });
   };
 
@@ -134,16 +144,15 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
         const companies = result.data;
         
         if (window.confirm(`Found ${companies.length} active IPOs from CDSC. Would you like to sync them to your live oversubscription list?`)) {
-          const overSubRef = ref(db, 'oversubscription');
+          const overSubCollection = collection(firestore, 'oversubscription');
           
           for (const company of companies) {
             // Check if already exists in our list
             const exists = overSubData.find(item => item.name === company.name);
             if (exists) {
               // Update existing
-              const itemRef = ref(db, `oversubscription/${exists.id}`);
-              await set(itemRef, {
-                ...exists,
+              const itemDoc = doc(firestore, 'oversubscription', exists.id);
+              await updateDoc(itemDoc, {
                 issuedUnits: company.issuedUnits,
                 appliedUnits: company.appliedUnits,
                 oversubscription: company.oversubscription,
@@ -151,8 +160,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
               });
             } else {
               // Add new
-              const newRef = push(overSubRef);
-              await set(newRef, {
+              await addDoc(overSubCollection, {
                 name: company.name,
                 issuedUnits: company.issuedUnits,
                 appliedUnits: company.appliedUnits,
@@ -193,37 +201,36 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     
     try {
       if (editingIpo) {
         // Update existing IPO in Firebase
-        const ipoRef = ref(db, `ipos/${editingIpo.id}`);
-        set(ipoRef, formData)
-          .then(() => setIsModalOpen(false))
-          .catch(err => setError("Failed to update IPO in Firebase."));
+        const ipoDoc = doc(firestore, 'ipos', editingIpo.id);
+        await setDoc(ipoDoc, formData);
+        setIsModalOpen(false);
       } else {
         // Add new IPO to Firebase
-        const iposRef = ref(db, 'ipos');
-        const newIpoRef = push(iposRef);
-        set(newIpoRef, formData)
-          .then(() => setIsModalOpen(false))
-          .catch(err => setError("Failed to add IPO to Firebase."));
+        const iposCollection = collection(firestore, 'ipos');
+        await addDoc(iposCollection, formData);
+        setIsModalOpen(false);
       }
     } catch (err) {
-      console.error(err);
-      setError("Failed to save IPO data.");
+      handleFirestoreError(err, editingIpo ? OperationType.UPDATE : OperationType.CREATE, 'ipos');
     }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this IPO?')) return;
     
-    const ipoRef = ref(db, `ipos/${id}`);
-    set(ipoRef, null) // Deleting in Firebase
-      .catch(err => alert("Failed to delete IPO from Firebase."));
+    try {
+      const ipoDoc = doc(firestore, 'ipos', id);
+      await deleteDoc(ipoDoc);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `ipos/${id}`);
+    }
   };
 
   const handleOpenOverSubModal = (data) => {
@@ -250,24 +257,26 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     };
     
     if (editingOverSub) {
-      const overSubRef = ref(db, `oversubscription/${editingOverSub.id}`);
-      set(overSubRef, dataToSave)
+      const overSubDoc = doc(firestore, 'oversubscription', editingOverSub.id);
+      setDoc(overSubDoc, dataToSave)
         .then(() => setIsOverSubModalOpen(false))
-        .catch(err => alert("Failed to update oversubscription in Firebase."));
+        .catch(err => handleFirestoreError(err, OperationType.UPDATE, `oversubscription/${editingOverSub.id}`));
     } else {
-      const overSubRef = ref(db, 'oversubscription');
-      const newRef = push(overSubRef);
-      set(newRef, dataToSave)
+      const overSubCollection = collection(firestore, 'oversubscription');
+      addDoc(overSubCollection, dataToSave)
         .then(() => setIsOverSubModalOpen(false))
-        .catch(err => alert("Failed to add oversubscription to Firebase."));
+        .catch(err => handleFirestoreError(err, OperationType.CREATE, 'oversubscription'));
     }
   };
 
-  const handleOverSubDelete = (id) => {
+  const handleOverSubDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this oversubscription data?')) return;
-    const overSubRef = ref(db, `oversubscription/${id}`);
-    set(overSubRef, null)
-      .catch(err => alert("Failed to delete from Firebase."));
+    try {
+      const overSubDoc = doc(firestore, 'oversubscription', id);
+      await deleteDoc(overSubDoc);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `oversubscription/${id}`);
+    }
   };
 
   const filteredIpos = ipos.filter(ipo => 
@@ -292,14 +301,12 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
           <button 
             onClick={() => {
               if (window.confirm('This will overwrite existing Firebase IPO data with dummy data. Continue?')) {
-                const iposRef = ref(db, 'ipos');
-                const dataToSeed = {};
-                DUMMY_IPOS.forEach(ipo => {
+                const iposCollection = collection(firestore, 'ipos');
+                DUMMY_IPOS.forEach(async (ipo) => {
                   const { id, ...rest } = ipo;
-                  const newRef = push(iposRef);
-                  dataToSeed[newRef.key] = rest;
+                  await addDoc(iposCollection, rest);
                 });
-                set(iposRef, dataToSeed).then(() => alert('Dummy data seeded!'));
+                alert('Dummy data seeding started!');
               }
             }}
             className={cn(
@@ -431,18 +438,18 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
                 </div>
                 <button 
                   onClick={() => {
-                    const overSubRef = ref(db, 'oversubscription');
                     const exists = overSubData.some(item => item.name === ipo.name);
                     if (exists) {
                       const existing = overSubData.find(item => item.name === ipo.name);
-                      update(ref(db, `oversubscription/${existing.id}`), {
+                      const overSubDoc = doc(firestore, 'oversubscription', existing.id);
+                      updateDoc(overSubDoc, {
                         appliedUnits: ipo.appliedUnits,
                         issuedUnits: ipo.issuedUnits,
                         lastUpdated: new Date().toISOString()
                       }).then(() => alert('Updated in database!'));
                     } else {
-                      const newRef = push(overSubRef);
-                      set(newRef, {
+                      const overSubCollection = collection(firestore, 'oversubscription');
+                      addDoc(overSubCollection, {
                         name: ipo.name,
                         issuedUnits: ipo.issuedUnits,
                         appliedUnits: ipo.appliedUnits,

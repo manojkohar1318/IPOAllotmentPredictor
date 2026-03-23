@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: ipos
+    // Document ID: auto-generated or custom
+    // Fields: name, symbol, type, status, openDate, closeDate, units, price, manager, description, createdAt
+    //
+    // Collection: countdown
+    // Document ID: main
+    // Fields: company, targetDate
+    //
+    // Collection: users
+    // Document ID: Firebase Auth UID
+    // Fields: email, savedBoids, createdAt
+    //
+    // Collection: oversubscription
+    // Document ID: auto-generated or custom
+    // Fields: name, issuedUnits, appliedUnits, lastUpdated
+    //
+    // Collection: predictions
+    // Document ID: auto-generated
+    // Fields: userId, ipoId, accounts, result, createdAt
+    //
+    // Collection: stats
+    // Document ID: auto-generated or custom
+    // Fields: totalPredictions, successfulAllotments
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
+         (request.auth.token.email == "manojkohar1318@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email']) &&
+             data.email is string &&
+             (!('savedBoids' in data) || data.savedBoids is list);
+    }
+
+    function isValidIpo(data) {
+      return data.keys().hasAll(['name', 'symbol', 'type', 'status']) &&
+             data.name is string && data.symbol is string;
+    }
+
+    function isValidCountdown(data) {
+      return data.keys().hasAll(['company', 'targetDate']) &&
+             data.company is string && data.targetDate is string;
+    }
+
+    function isValidOversubscription(data) {
+      return data.keys().hasAll(['name', 'issuedUnits', 'appliedUnits']) &&
+             data.name is string && data.issuedUnits is number && data.appliedUnits is number;
+    }
+
+    function isValidPrediction(data) {
+      return data.keys().hasAll(['userId', 'ipoId', 'accounts', 'result']) &&
+             data.userId == request.auth.uid &&
+             data.ipoId is string &&
+             data.accounts is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+    }
+
+    match /ipos/{ipoId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidIpo(request.resource.data);
+    }
+
+    match /countdown/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidCountdown(request.resource.data);
+    }
+
+    match /oversubscription/{ipoId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated(); // Allow users to update if app logic requires
+      // Actually, better to restrict write to admin if it's scraped data
+      // allow write: if isAdmin() && isValidOversubscription(request.resource.data);
+    }
+
+    match /predictions/{predictionId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidPrediction(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if isAuthenticated(); // Allow users to increment stats
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

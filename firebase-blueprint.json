@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "Ipo": {
+      "title": "IPO",
+      "description": "Initial Public Offering details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Company name" },
+        "symbol": { "type": "string", "description": "Stock symbol" },
+        "sector": { "type": "string", "description": "Industry sector" },
+        "price": { "type": "number", "description": "IPO price per unit" },
+        "units": { "type": "string", "description": "Total units offered" },
+        "openingDate": { "type": "string", "description": "Opening date" },
+        "closingDate": { "type": "string", "description": "Closing date" },
+        "status": { "type": "string", "enum": ["Open", "Closed", "Upcoming"], "description": "Current status" },
+        "type": { "type": "string", "description": "IPO type (Ordinary, Mutual Fund, etc.)" },
+        "minUnits": { "type": "number", "description": "Minimum units to apply" },
+        "maxUnits": { "type": "number", "description": "Maximum units to apply" },
+        "issueManager": { "type": "string", "description": "Issue manager name" }
+      },
+      "required": ["name", "symbol", "price", "status"]
+    },
+    "Countdown": {
+      "title": "Countdown",
+      "description": "Main countdown timer data",
+      "type": "object",
+      "properties": {
+        "targetDate": { "type": "string", "description": "Target ISO date string" },
+        "title": { "type": "string", "description": "Countdown title" },
+        "isActive": { "type": "boolean", "description": "Whether the countdown is active" }
+      }
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and saved data",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "description": "User email" },
+        "savedBoids": { "type": "array", "items": { "type": "string" }, "description": "List of 16-digit BOIDs" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "User role" }
+      }
+    },
+    "Oversubscription": {
+      "title": "Oversubscription",
+      "description": "Real-time oversubscription data for a company",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Company name" },
+        "times": { "type": "number", "description": "Number of times oversubscribed" },
+        "applicants": { "type": "number", "description": "Total number of applicants" },
+        "units": { "type": "number", "description": "Total units applied for" },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "Last sync timestamp" }
+      }
+    },
+    "Prediction": {
+      "title": "Prediction",
+      "description": "Log of IPO allotment predictions",
+      "type": "object",
+      "properties": {
+        "ipoName": { "type": "string", "description": "Name of the IPO" },
+        "units": { "type": "number", "description": "Units applied for" },
+        "chance": { "type": "number", "description": "Calculated allotment chance percentage" },
+        "userId": { "type": "string", "description": "UID of the user who made the prediction" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the prediction was made" }
+      }
+    },
+    "Stat": {
+      "title": "Stat",
+      "description": "Global application statistics",
+      "type": "object",
+      "properties": {
+        "totalPredictions": { "type": "number", "description": "Total number of predictions made" },
+        "totalUsers": { "type": "number", "description": "Total number of registered users" }
+      }
+    }
+  },
+  "firestore": {
+    "/ipos/{ipoId}": { "schema": "Ipo", "description": "Collection of IPO details" },
+    "/countdown/main": { "schema": "Countdown", "description": "Main countdown document" },
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/oversubscription/{companyId}": { "schema": "Oversubscription", "description": "Oversubscription data" },
+    "/predictions/{predictionId}": { "schema": "Prediction", "description": "Log of user predictions" },
+    "/stats/{statId}": { "schema": "Stat", "description": "Global stats" }
+  }
+}

@@ -16,7 +16,8 @@ import {
   Twitter,
   Instagram,
   Mail,
-  Sparkles
+  Sparkles,
+  Search
 } from 'lucide-react';
 import { TRANSLATIONS } from './constants';
 import { Navbar } from './components/Navbar';
@@ -30,10 +31,21 @@ import { TermsOfService } from './components/TermsOfService';
 import { DisclaimerPage } from './components/DisclaimerPage';
 import { ContactPage } from './components/ContactPage';
 import { OversubscriptionChecker } from './components/OversubscriptionChecker';
+import { IpoResultChecker } from './components/IpoResultChecker';
+import { AuthModal } from './components/AuthModal';
 import { AdsterraNativeBanner } from './components/AdsterraNativeBanner';
 import { cn } from './cn';
 import { DUMMY_IPOS } from './constants';
-import { db, ref, onValue } from './firebase';
+import { 
+  firestore, 
+  doc, 
+  auth, 
+  onAuthStateChanged,
+  collection, 
+  onSnapshot,
+  handleFirestoreError,
+  OperationType 
+} from './firebase';
 
 function AppContent() {
   const [lang, setLang] = useState('EN');
@@ -47,17 +59,31 @@ function AppContent() {
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const t = TRANSLATIONS[lang];
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    window.addEventListener('open-auth-modal', handleOpenAuth);
+
+    return () => {
+      unsubscribeAuth();
+      window.removeEventListener('open-auth-modal', handleOpenAuth);
+    };
+  }, []);
 
   // Fetch data from Firebase and Live Scraper
   const fetchLiveOversubscription = async () => {
     setIsRefreshing(true);
     try {
       const response = await fetch('/api/ipo-list');
-      console.log("Response from /api/ipo-list:", response);
       if (response.ok) {
         const result = await response.json();
-        console.log("Data from /api/ipo-list:", result);
         if (result.success) {
           setLiveOversubscription(result.data);
         }
@@ -70,26 +96,28 @@ function AppContent() {
   };
 
   useEffect(() => {
-    const iposRef = ref(db, 'ipos');
-    const unsubscribeIpos = onValue(iposRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const ipoList = Object.keys(data).map(key => ({
-          ...data[key],
-          id: key
-        }));
+    const iposCollection = collection(firestore, 'ipos');
+    const unsubscribeIpos = onSnapshot(iposCollection, (snapshot) => {
+      const ipoList = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      }));
+      if (ipoList.length > 0) {
         setIpos(ipoList);
       } else {
         setIpos(DUMMY_IPOS);
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'ipos');
     });
 
-    const countdownRef = ref(db, 'countdown');
-    const unsubscribeCountdown = onValue(countdownRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setCountdownData(data);
+    const countdownDoc = doc(firestore, 'countdown', 'main');
+    const unsubscribeCountdown = onSnapshot(countdownDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        setCountdownData(snapshot.data());
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'countdown/main');
     });
 
     fetchLiveOversubscription();
@@ -188,6 +216,7 @@ function AppContent() {
       case 'disclaimer': return <DisclaimerPage lang={lang} isDark={isDark} />;
       case 'contact': return <ContactPage lang={lang} isDark={isDark} />;
       case 'oversubscription': return <OversubscriptionChecker lang={lang} isDark={isDark} />;
+      case 'ipo-result': return <IpoResultChecker lang={lang} isDark={isDark} setCurrentPage={setCurrentPage} />;
       default: return renderHome();
     }
   };
@@ -226,6 +255,15 @@ function AppContent() {
                 className="btn-gold text-lg px-10 py-5 flex items-center gap-3 group"
               >
                 {t.checkChances} <Sparkles className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage('ipo-result')}
+                className={cn(
+                  "px-10 py-5 rounded-xl font-bold border transition-all flex items-center gap-3",
+                  isDark ? "bg-emerald-600/20 border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 text-emerald-600"
+                )}
+              >
+                <Search className="w-6 h-6" /> Check IPO Result
               </button>
               <button 
                 onClick={() => setCurrentPage('oversubscription')}
@@ -543,6 +581,12 @@ function AppContent() {
       </main>
 
       <Footer lang={lang} setCurrentPage={setCurrentPage} isDark={isDark} />
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        isDark={isDark} 
+      />
 
       {/* Floating Buttons */}
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40">

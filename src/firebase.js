@@ -1,18 +1,51 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, push, set, update, runTransaction, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, addDoc, deleteDoc, onSnapshot, getDocs, query, where, orderBy, limit, increment } from "firebase/firestore";
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY",
-  authDomain: "nepse-ipo-allotment-predictor.firebaseapp.com",
-  databaseURL: "https://nepse-ipo-allotment-predictor-default-rtdb.firebaseio.com",
-  projectId: "nepse-ipo-allotment-predictor",
-  storageBucket: "nepse-ipo-allotment-predictor.appspot.com",
-  messagingSenderId: "555483978707",
-  appId: "1:555483978707:web:e9f6908604608f34592d26"
-};
+// Import the Firebase configuration
+import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const auth = getAuth(app);
+const firestore = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-export { db, ref, push, set, update, runTransaction, onValue, remove, get };
+const googleProvider = new GoogleAuthProvider();
+
+export { 
+  auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
+  firestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp,
+  collection, addDoc, deleteDoc, onSnapshot, getDocs, query, where, orderBy, limit, increment
+};
+
+export const OperationType = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  LIST: 'list',
+  GET: 'get',
+  WRITE: 'write',
+};
+
+export function handleFirestoreError(error, operationType, path) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}

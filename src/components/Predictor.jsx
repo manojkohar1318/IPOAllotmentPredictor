@@ -20,7 +20,20 @@ import { TRANSLATIONS } from '../constants';
 import { cn } from '../cn';
 import ReactConfetti from 'react-confetti';
 import html2canvas from 'html2canvas';
-import { db, ref, push, runTransaction, get } from '../firebase';
+import { 
+  firestore, 
+  auth,
+  collection, 
+  addDoc, 
+  doc, 
+  getDoc, 
+  getDocs,
+  setDoc, 
+  updateDoc, 
+  increment,
+  handleFirestoreError,
+  OperationType 
+} from '../firebase';
 import { FUNNY_COMMENTS } from '../utils/comments';
 import { AdsterraNativeBanner } from './AdsterraNativeBanner';
 
@@ -94,11 +107,15 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
       
       // If live scraper returned nothing, try Firebase
       if (data.length === 0) {
-        const overSubRef = ref(db, 'oversubscription');
-        const snapshot = await get(overSubRef);
-        if (snapshot.exists()) {
-          const val = snapshot.val();
-          data = Object.keys(val).map(key => ({ id: key, ...val[key] }));
+        try {
+          const overSubCollection = collection(firestore, 'oversubscription');
+          const snapshot = await getDocs(overSubCollection);
+          data = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+        } catch (err) {
+          handleFirestoreError(err, OperationType.LIST, 'oversubscription');
         }
       }
       
@@ -193,24 +210,30 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
         const sentiment = oversub > 10 ? 'Bullish' : oversub > 5 ? 'Positive' : oversub > 2 ? 'Neutral' : 'Cautious';
         
         // A. Save prediction result
-        const predictionsRef = ref(db, 'predictions');
-        push(predictionsRef, {
+        const predictionsCollection = collection(firestore, 'predictions');
+        addDoc(predictionsCollection, {
           companyName: selectedIpo.name,
           totalAccounts: numAccounts,
           perAccountOdds: (pPerAccount * 100).toFixed(2) + '%',
           marketSentiment: sentiment,
           timestamp: Date.now()
-        });
+        }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'predictions'));
 
         // B. Update stats
-        runTransaction(ref(db, 'stats/totalPredictions'), (currentValue) => {
-          return (currentValue || 0) + 1;
+        const statsDoc = doc(firestore, 'stats', 'global');
+        updateDoc(statsDoc, {
+          totalPredictions: increment(1)
+        }).catch((err) => {
+          // If doc doesn't exist, create it
+          setDoc(statsDoc, { totalPredictions: 1 }, { merge: true })
+            .catch(setErr => handleFirestoreError(setErr, OperationType.WRITE, 'stats/global'));
         });
 
         const companyId = selectedIpo.name.replace(/\s+/g, '_').toLowerCase();
-        runTransaction(ref(db, `stats/companySearchCount/${companyId}`), (currentValue) => {
-          return (currentValue || 0) + 1;
-        });
+        const companyStatsDoc = doc(firestore, 'stats', 'companies', 'counts', companyId);
+        setDoc(companyStatsDoc, {
+          searchCount: increment(1)
+        }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `stats/companies/counts/${companyId}`));
       } catch (fbError) {
         console.error('Firebase save failed:', fbError);
       }

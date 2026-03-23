@@ -3,7 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calculator, Clock, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { cn } from '../cn';
-import { db, ref, onValue } from '../firebase';
+import { 
+  firestore, 
+  collection, 
+  onSnapshot 
+} from '../firebase';
 
 export const OversubscriptionChecker = ({ lang, isDark }) => {
   const [companies, setCompanies] = useState([]);
@@ -33,14 +37,13 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
       }
       
       // Fallback to Firebase if live fetch fails or is empty
-      const overSubRef = ref(db, 'oversubscription');
-      onValue(overSubRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const list = Object.keys(data).map(key => ({
-            id: key,
-            ...data[key]
-          }));
+      const overSubCollection = collection(firestore, 'oversubscription');
+      onSnapshot(overSubCollection, (snapshot) => {
+        const list = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        if (list.length > 0) {
           setCompanies(list);
         } else {
           fetchFromAPI(); // Final fallback
