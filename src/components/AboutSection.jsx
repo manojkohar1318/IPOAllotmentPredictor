@@ -94,7 +94,7 @@ export const AboutSection = ({ lang, isDark }) => {
               Welcome to our IPO Allotment Probability website — a simple platform created to help investors understand their approximate chances of getting IPO shares.
             </p>
             <p className={cn("text-lg md:text-xl leading-relaxed", isDark ? "text-slate-300" : "text-slate-600")}>
-              We use publicly available subscription data to calculate and display estimated allotment probabilities in an easy and understandable format. Our goal is to make IPO data more transparent, engaging, and a little more fun for retail investors.
+              We use publicly available subscription data and real-time oversubscription rates from CDSC to calculate and display estimated allotment probabilities in an easy and understandable format. Our goal is to make IPO data more transparent, engaging, and a little more fun for retail investors.
             </p>
             <p className={cn("text-lg md:text-xl leading-relaxed", isDark ? "text-slate-300" : "text-slate-600")}>
               Please note that the results shown here are only estimates. The actual IPO allotment process is conducted by official registrars using randomized methods, so final outcomes may vary.

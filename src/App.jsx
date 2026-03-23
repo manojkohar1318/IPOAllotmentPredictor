@@ -358,34 +358,19 @@ function AppContent() {
                             />
                           </div>
                           <div className="flex justify-between text-[9px] font-bold text-slate-500">
-                            <span>Issued: {(ipo.issuedUnits / 1000000).toFixed(1)}M</span>
-                            <span>Applied: {(ipo.appliedUnits / 1000000).toFixed(1)}M</span>
+                            <span>Issued: {ipo.issuedUnits.toLocaleString()}</span>
+                            <span>Applied: {ipo.appliedUnits.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <>
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                        <CheckCircle2 className="text-emerald-500 w-6 h-6" />
-                      </div>
-                      <div>
-                        <div className={cn("font-bold", isDark ? "text-white" : "text-slate-900")}>Sarbottam Cement</div>
-                        <div className="text-xs text-slate-500">Oversubscribed by 15.5x</div>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="h-2 bg-slate-200 dark:bg-navy-900 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 w-[75%]" />
-                      </div>
-                      <div className="flex justify-between text-xs font-bold text-slate-500">
-                        <span>Issued: 6M Units</span>
-                        <span>Applied: 93M Units</span>
-                      </div>
-                    </div>
-                  </>
+                  <div className="text-center py-10">
+                    <TrendingUp className="w-16 h-16 text-emerald-500/20 mx-auto mb-4" />
+                    <p className={cn("font-bold", isDark ? "text-slate-400" : "text-slate-500")}>No active IPOs to show.</p>
+                    <p className="text-xs text-slate-500 mt-2">Check back later for live updates.</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -425,102 +410,34 @@ function AppContent() {
         </div>
       </section>
 
-      {/* Recent Results */}
-      <section className="max-w-7xl mx-auto px-4">
-        <div className={cn(
-          "glass p-10 rounded-[3rem] border",
-          isDark ? "border-white/10" : "border-slate-200 bg-white/50"
-        )}>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-            <h2 className={cn("text-3xl font-black", isDark ? "text-white" : "text-slate-900")}>{t.recentResults}</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ipos.slice(0, 2).map((ipo, idx) => (
-              <div key={ipo.id || `recent-${idx}`} className={cn(
-                "p-6 rounded-2xl border transition-all",
-                isDark ? "bg-white/5 border-white/10 hover:border-white/30" : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-              )}>
-                <div className="flex justify-between items-start mb-4">
-                  <span className={cn(
-                    "text-xs font-bold px-2 py-1 rounded border",
-                    isDark ? "bg-navy-900 text-gold-400 border-gold-500/30" : "bg-slate-50 text-gold-600 border-gold-500/30"
-                  )}>
-                    {ipo.type}
-                  </span>
-                  <span className={isDark ? "text-slate-500" : "text-slate-400"}>{ipo.sector}</span>
-                </div>
-                <h3 className={cn("font-bold text-lg mb-4", isDark ? "text-white" : "text-slate-900")}>{lang === 'EN' ? ipo.name : ipo.nameNP}</h3>
-                <div className={cn("flex justify-between items-center pt-4 border-t", isDark ? "border-white/5" : "border-slate-100")}>
-                  <div>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Category</p>
-                    <p className={cn("font-bold text-xs", isDark ? "text-white" : "text-slate-700")}>{ipo.category}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Price</p>
-                    <p className="font-bold text-emerald-500">NPR {ipo.price}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Countdown Widget */}
-      <section className="max-w-4xl mx-auto px-4">
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-10 rounded-[3rem] text-center shadow-2xl shadow-emerald-900/40 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <Clock className="w-32 h-32" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2 text-white">Next Major IPO Result Countdown</h2>
-          <p className="text-white font-black text-3xl mb-8 uppercase tracking-wider">{countdownData.company}</p>
-          <div className="flex justify-center gap-4 sm:gap-8">
-            {[
-              { label: 'Days', value: timeLeft.d },
-              { label: 'Hours', value: timeLeft.h },
-              { label: 'Mins', value: timeLeft.m },
-              { label: 'Secs', value: timeLeft.s },
-            ].map((item, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black mb-2">
-                  {String(item.value).padStart(2, '0')}
+      {timeLeft.d + timeLeft.h + timeLeft.m + timeLeft.s > 0 && (
+        <section className="max-w-4xl mx-auto px-4">
+          <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-10 rounded-[3rem] text-center shadow-2xl shadow-emerald-900/40 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Clock className="w-32 h-32" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-white">Next Major IPO Result Countdown</h2>
+            <p className="text-white font-black text-3xl mb-8 uppercase tracking-wider">{countdownData.company}</p>
+            <div className="flex justify-center gap-4 sm:gap-8">
+              {[
+                { label: 'Days', value: timeLeft.d },
+                { label: 'Hours', value: timeLeft.h },
+                { label: 'Mins', value: timeLeft.m },
+                { label: 'Secs', value: timeLeft.s },
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black mb-2">
+                    {String(item.value).padStart(2, '0')}
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-70">{item.label}</span>
                 </div>
-                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-70">{item.label}</span>
-              </div>
-            ))}
+              ))}
+            </div>
+            <p className="mt-8 font-bold text-emerald-100">Stay tuned for upcoming IPO results!</p>
           </div>
-          <p className="mt-8 font-bold text-emerald-100">Stay tuned for upcoming IPO results!</p>
-        </div>
-      </section>
-
-      {/* Oversubscription Checker Card */}
-      <section className="max-w-7xl mx-auto px-4">
-        <motion.div 
-          whileHover={{ y: -5 }}
-          className={cn(
-            "glass p-8 md:p-12 rounded-[3rem] border flex flex-col md:flex-row items-center gap-8 text-center md:text-left",
-            isDark ? "border-white/10 bg-indigo-900/10" : "border-indigo-100 bg-indigo-50/50"
-          )}
-        >
-          <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-xl shadow-indigo-900/20 shrink-0">
-            <Calculator className="text-white w-10 h-10" />
-          </div>
-          <div className="flex-1">
-            <h2 className={cn("text-3xl font-black mb-2", isDark ? "text-white" : "text-slate-900")}>
-              {t.oversubscriptionChecker}
-            </h2>
-            <p className={cn("text-lg mb-6", isDark ? "text-slate-400" : "text-slate-600")}>
-              Don't guess the numbers. Check real-time oversubscription data directly from CDSC to get the most accurate allotment predictions.
-            </p>
-            <button 
-              onClick={() => setCurrentPage('oversubscription')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 mx-auto md:mx-0"
-            >
-              Check Real-time Data <ArrowRight size={20} />
-            </button>
-          </div>
-        </motion.div>
-      </section>
+        </section>
+      )}
 
       {/* Market Insights Section */}
       <section className="max-w-7xl mx-auto px-4">

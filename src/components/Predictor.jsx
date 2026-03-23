@@ -75,13 +75,6 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
     localStorage.setItem('predictor_form', JSON.stringify({ accounts, kitta, isFirstTime }));
   }, [accounts, kitta, isFirstTime]);
 
-  // Sync oversubscription when selected IPO changes
-  useEffect(() => {
-    if (selectedIpo && selectedIpo.oversubscription) {
-      setOversubscription(selectedIpo.oversubscription.toString());
-    }
-  }, [selectedIpo]);
-
   const handleAutoFill = async () => {
     if (!selectedIpo) return;
     setIsAutoFilling(true);
@@ -191,7 +184,7 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
         breakdown: [
           { label: lang === 'EN' ? 'Per Account Odds' : 'प्रति खाता सम्भावना', value: `${(pPerAccount * 100).toFixed(2)}%` },
           { label: lang === 'EN' ? 'Total Accounts' : 'कुल खाता संख्या', value: accounts },
-          { label: lang === 'EN' ? 'Issued Units' : 'कुल कित्ता', value: selectedIpo.issuedUnits ? (selectedIpo.issuedUnits / 1000000).toFixed(2) + 'M' : 'N/A' }
+          { label: lang === 'EN' ? 'Issued Units' : 'कुल कित्ता', value: selectedIpo.issuedUnits ? selectedIpo.issuedUnits.toLocaleString() : 'N/A' }
         ]
       });
 
@@ -511,7 +504,7 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
                     value={selectedIpoId}
                     onChange={(e) => setSelectedIpoId(e.target.value)}
                     className={cn(
-                      "w-full border rounded-2xl p-5 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all appearance-none cursor-pointer",
+                      "w-full border rounded-xl p-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all appearance-none cursor-pointer",
                       isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
                     )}
                   >
@@ -531,19 +524,11 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
                       <span className="flex items-center gap-2">
                         <Users className="w-4 h-4" /> Expected Oversubscription (Times)
                       </span>
-                      <button 
-                        onClick={handleAutoFill}
-                        disabled={!selectedIpo || isAutoFilling}
-                        className="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-md transition-colors flex items-center gap-1 disabled:opacity-50"
-                      >
-                        {isAutoFilling ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                        {t.autoFill}
-                      </button>
                     </label>
                     <input 
                       type="number"
                       step="0.01"
-                      placeholder="e.g. 15.5"
+                      placeholder="e.g. 15.5, 20.2, 5.0"
                       value={oversubscription}
                       onChange={(e) => setOversubscription(e.target.value)}
                       className={cn(
