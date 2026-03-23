@@ -409,7 +409,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
                     {ipo.name}
                   </h3>
                   <span className="bg-emerald-500/10 text-emerald-500 text-xs font-black px-2 py-1 rounded-lg border border-emerald-500/20 whitespace-nowrap">
-                    {ipo.oversubscription}x Oversubscribed
+                    {ipo.oversubscription} Oversubscribed
                   </span>
                 </div>
                 <div className="space-y-3">

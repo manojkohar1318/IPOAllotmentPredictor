@@ -346,7 +346,7 @@ function AppContent() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-xl font-black text-emerald-500">{ipo.oversubscription}x</div>
+                            <div className="text-xl font-black text-emerald-500">{ipo.oversubscription}</div>
                             <div className="text-[9px] text-slate-500 uppercase font-bold">Oversubscribed</div>
                           </div>
                         </div>

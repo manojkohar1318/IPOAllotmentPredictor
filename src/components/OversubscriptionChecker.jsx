@@ -80,13 +80,12 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
   const handleCheck = () => {
     if (!selectedCompany) return;
     
-    const ratio = selectedCompany.appliedUnits / selectedCompany.issuedUnits;
     setResult({
-      ratio: ratio.toFixed(2),
+      ratio: selectedCompany.oversubscription,
       issued: selectedCompany.issuedUnits.toLocaleString(),
       applied: selectedCompany.appliedUnits.toLocaleString(),
       lastUpdated: selectedCompany.lastUpdated ? new Date(selectedCompany.lastUpdated).toLocaleString() : new Date().toLocaleString(),
-      percentage: Math.min((ratio / 20) * 100, 100) // Visual progress cap at 20x
+      percentage: Math.min((parseFloat(selectedCompany.oversubscription) / 20) * 100, 100) // Visual progress cap at 20x
     });
   };
 
@@ -230,7 +229,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
                         ? "bg-emerald-500 border-emerald-400/30 text-white shadow-emerald-500/30" 
                         : "bg-orange-500 border-orange-400/30 text-white shadow-orange-500/30"
                     )}>
-                      <span className="text-3xl md:text-7xl font-black leading-none">{result.ratio}x</span>
+                      <span className="text-3xl md:text-7xl font-black leading-none">{result.ratio}</span>
                       <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest mt-1 md:mt-2 opacity-80">Ratio</span>
                     </div>
                     
