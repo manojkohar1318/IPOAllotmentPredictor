@@ -179,10 +179,10 @@ function AppContent() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'predictor': return <Predictor lang={lang} ipos={ipos} isDark={isDark} setCurrentPage={setCurrentPage} />;
+      case 'predictor': return <Predictor lang={lang} ipos={ipos} liveIpos={liveOversubscription} isDark={isDark} setCurrentPage={setCurrentPage} />;
       case 'education': return <EducationSection lang={lang} isDark={isDark} />;
       case 'about': return <AboutSection lang={lang} isDark={isDark} />;
-      case 'admin': return <AdminDashboard lang={lang} ipos={ipos} setIpos={setIpos} countdownData={countdownData} setCountdownData={setCountdownData} isDark={isDark} />;
+      case 'admin': return <AdminDashboard lang={lang} ipos={ipos} setIpos={setIpos} countdownData={countdownData} setCountdownData={setCountdownData} isDark={isDark} liveOversubscription={liveOversubscription} />;
       case 'privacy': return <PrivacyPolicy lang={lang} isDark={isDark} />;
       case 'terms': return <TermsOfService lang={lang} isDark={isDark} />;
       case 'disclaimer': return <DisclaimerPage lang={lang} isDark={isDark} />;

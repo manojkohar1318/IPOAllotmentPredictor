@@ -24,7 +24,7 @@ import { db, ref, push, runTransaction, get } from '../firebase';
 import { FUNNY_COMMENTS } from '../utils/comments';
 import { AdsterraNativeBanner } from './AdsterraNativeBanner';
 
-export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
+export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage }) => {
   const [step, setStep] = useState('form');
   const [loading, setLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -32,6 +32,21 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const resultRef = useRef(null);
   
+  // Combine Firebase IPOs with Live CDSC IPOs
+  const combinedIpos = [
+    ...liveIpos.map(ipo => ({
+      id: `live-${ipo.id}`,
+      name: ipo.name,
+      nameNP: ipo.name,
+      category: 'Live IPO',
+      sector: 'Various',
+      oversubscription: ipo.oversubscription,
+      issuedUnits: ipo.issuedUnits,
+      isLive: true
+    })),
+    ...ipos.filter(ipo => !liveIpos.some(live => live.name.toLowerCase().includes(ipo.name.toLowerCase())))
+  ];
+
   // Form State
   const [selectedIpoId, setSelectedIpoId] = useState('');
   const [oversubscription, setOversubscription] = useState('');
@@ -42,7 +57,7 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
   const [result, setResult] = useState(null);
   const t = TRANSLATIONS[lang];
 
-  const selectedIpo = ipos.find(ipo => ipo.id === selectedIpoId);
+  const selectedIpo = combinedIpos.find(ipo => ipo.id === selectedIpoId);
 
   // Load saved data
   useEffect(() => {
@@ -175,7 +190,8 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
         companyName: lang === 'EN' ? selectedIpo.name : selectedIpo.nameNP,
         breakdown: [
           { label: lang === 'EN' ? 'Per Account Odds' : 'प्रति खाता सम्भावना', value: `${(pPerAccount * 100).toFixed(2)}%` },
-          { label: lang === 'EN' ? 'Total Accounts' : 'कुल खाता संख्या', value: accounts }
+          { label: lang === 'EN' ? 'Total Accounts' : 'कुल खाता संख्या', value: accounts },
+          { label: lang === 'EN' ? 'Issued Units' : 'कुल कित्ता', value: selectedIpo.issuedUnits ? (selectedIpo.issuedUnits / 1000000).toFixed(2) + 'M' : 'N/A' }
         ]
       });
 
@@ -500,7 +516,7 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
                     )}
                   >
                     <option value="">-- {t.selectCompany} --</option>
-                    {ipos.map(ipo => (
+                    {combinedIpos.map(ipo => (
                       <option key={ipo.id} value={ipo.id}>
                         {lang === 'EN' ? ipo.name : ipo.nameNP} ({ipo.category})
                       </option>

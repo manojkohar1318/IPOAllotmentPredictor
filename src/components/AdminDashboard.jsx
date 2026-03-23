@@ -13,13 +13,14 @@ import {
   Calculator,
   RefreshCw,
   Loader2,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 import { SECTORS, DUMMY_IPOS } from '../constants';
 import { cn } from '../cn';
-import { db, ref, set, push, update, remove } from '../firebase';
+import { db, ref, set, push, update, remove, onValue } from '../firebase';
 
-export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdownData, isDark }) => {
+export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdownData, isDark, liveOversubscription = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOverSubModalOpen, setIsOverSubModalOpen] = useState(false);
   const [editingIpo, setEditingIpo] = useState(null);
@@ -28,7 +29,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
   const [overSubSearchQuery, setOverSubSearchQuery] = useState('');
   const [error, setError] = useState(null);
   const [overSubData, setOverSubData] = useState([]);
-  const [liveOverSubData, setLiveOverSubData] = useState([]);
+  const [liveOverSubData, setLiveOverSubData] = useState(liveOversubscription);
   const [isFetchingLive, setIsFetchingLive] = useState(false);
 
   useEffect(() => {
@@ -125,31 +126,42 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     setIsFetchingCDSC(true);
     setError(null);
     try {
-      const response = await fetch('/api/cdsc-companies');
+      const response = await fetch('/api/ipo-list');
       if (!response.ok) throw new Error('Failed to fetch from CDSC');
-      const data = await response.json();
+      const result = await response.json();
       
-      if (data && data.body) {
-        // CDSC API returns { body: [{ id: 1, name: '...' }, ...] }
-        const companies = data.body;
+      if (result.success && result.data) {
+        const companies = result.data;
         
-        if (window.confirm(`Found ${companies.length} companies from CDSC. Would you like to add them to your oversubscription list? (Existing names will be skipped)`)) {
+        if (window.confirm(`Found ${companies.length} active IPOs from CDSC. Would you like to sync them to your live oversubscription list?`)) {
           const overSubRef = ref(db, 'oversubscription');
           
           for (const company of companies) {
             // Check if already exists in our list
-            const exists = overSubData.some(item => item.name === company.name);
-            if (!exists) {
+            const exists = overSubData.find(item => item.name === company.name);
+            if (exists) {
+              // Update existing
+              const itemRef = ref(db, `oversubscription/${exists.id}`);
+              await set(itemRef, {
+                ...exists,
+                issuedUnits: company.issuedUnits,
+                appliedUnits: company.appliedUnits,
+                oversubscription: company.oversubscription,
+                lastUpdated: new Date().toISOString()
+              });
+            } else {
+              // Add new
               const newRef = push(overSubRef);
               await set(newRef, {
                 name: company.name,
-                issuedUnits: 1000000, // Default placeholder
-                appliedUnits: 0,      // Default placeholder
+                issuedUnits: company.issuedUnits,
+                appliedUnits: company.appliedUnits,
+                oversubscription: company.oversubscription,
                 lastUpdated: new Date().toISOString()
               });
             }
           }
-          alert('CDSC companies imported successfully!');
+          alert('CDSC IPO data synced successfully!');
         }
       }
     } catch (err) {
@@ -745,6 +757,36 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
               </div>
               
               <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+                {/* Live IPO Selection */}
+                <div className="space-y-2 mb-4 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
+                  <label className="text-xs font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                    <Sparkles size={14} /> Auto-fill from Live CDSC Data
+                  </label>
+                  <select 
+                    className={cn(
+                      "w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold",
+                      isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+                    )}
+                    onChange={(e) => {
+                      const selected = liveOverSubData.find(item => item.id === e.target.value);
+                      if (selected) {
+                        setFormData({
+                          ...formData,
+                          name: selected.name,
+                          issuedUnits: selected.issuedUnits,
+                          category: 'General Public'
+                        });
+                      }
+                    }}
+                  >
+                    <option value="">-- Select Live IPO to Auto-fill --</option>
+                    {liveOverSubData.map(item => (
+                      <option key={item.id} value={item.id}>{item.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-slate-500 font-medium italic">Selecting an IPO will automatically fill the name and issued units.</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase">Company Name (EN)</label>
