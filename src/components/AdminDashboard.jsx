@@ -12,7 +12,8 @@ import {
   Clock,
   Calculator,
   RefreshCw,
-  Loader2
+  Loader2,
+  TrendingUp
 } from 'lucide-react';
 import { SECTORS, DUMMY_IPOS } from '../constants';
 import { cn } from '../cn';
@@ -51,10 +52,12 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
   const fetchLiveOversubscription = async () => {
     setIsFetchingLive(true);
     try {
-      const response = await fetch('/api/live-oversubscription');
+      const response = await fetch('/api/ipo-list');
       if (response.ok) {
-        const data = await response.json();
-        setLiveOverSubData(data);
+        const result = await response.json();
+        if (result.success) {
+          setLiveOverSubData(result.data);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch live oversubscription:", err);

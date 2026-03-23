@@ -73,10 +73,13 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
     try {
       let data = [];
       
-      // Try live scraper first
-      const liveResponse = await fetch('/api/live-oversubscription');
+      // Try our new robust IPO list API first
+      const liveResponse = await fetch('/api/ipo-list');
       if (liveResponse.ok) {
-        data = await liveResponse.json();
+        const result = await liveResponse.json();
+        if (result.success) {
+          data = result.data;
+        }
       }
       
       // If live scraper returned nothing, try Firebase
@@ -89,17 +92,9 @@ export const Predictor = ({ lang, ipos, isDark, setCurrentPage }) => {
         }
       }
       
-      // If still nothing, try internal API
-      if (data.length === 0) {
-        const response = await fetch('/api/ipo-oversubscription');
-        if (response.ok) {
-          data = await response.json();
-        }
-      }
-
       const companyData = data.find(c => c.name.toLowerCase().includes(selectedIpo.name.toLowerCase()));
       if (companyData) {
-        const ratio = (companyData.appliedUnits / companyData.issuedUnits).toFixed(2);
+        const ratio = parseFloat(companyData.oversubscription).toFixed(2);
         setOversubscription(ratio);
       } else {
         alert('No oversubscription data found for this company.');

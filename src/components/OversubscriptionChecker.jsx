@@ -20,11 +20,11 @@ export const OversubscriptionChecker = ({ lang }) => {
     
     try {
       // Fetch live data from CDSC scraper first
-      const liveResponse = await fetch('/api/live-oversubscription');
+      const liveResponse = await fetch('/api/ipo-list');
       if (liveResponse.ok) {
-        const liveData = await liveResponse.json();
-        if (liveData && liveData.length > 0) {
-          setCompanies(liveData);
+        const result = await liveResponse.json();
+        if (result.success && result.data && result.data.length > 0) {
+          setCompanies(result.data);
           setLoading(false);
           return; // Use live data if available
         }

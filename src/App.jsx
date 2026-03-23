@@ -53,10 +53,12 @@ function AppContent() {
   const fetchLiveOversubscription = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch('/api/live-oversubscription');
+      const response = await fetch('/api/ipo-list');
       if (response.ok) {
-        const data = await response.json();
-        setLiveOversubscription(data);
+        const result = await response.json();
+        if (result.success) {
+          setLiveOversubscription(result.data);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch live oversubscription:", err);
@@ -89,39 +91,6 @@ function AppContent() {
     });
 
     fetchLiveOversubscription();
-
-    // Fetch from CDSC as fallback/additional data
-    const fetchCDSC = async () => {
-      try {
-        const response = await fetch('/api/cdsc-companies');
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.body) {
-            const cdscIpos = data.body.map(c => ({
-              id: `cdsc-${c.id}`,
-              name: c.name,
-              nameNP: c.name,
-              sector: 'Other',
-              type: 'IPO',
-              category: 'General Public',
-              issuedUnits: 1000000,
-              price: 100,
-              openDate: new Date().toISOString(),
-              closeDate: new Date().toISOString()
-            }));
-            
-            setIpos(prev => {
-              const existingNames = new Set(prev.map(ipo => ipo.name.toLowerCase()));
-              const newOnes = cdscIpos.filter(ipo => !existingNames.has(ipo.name.toLowerCase()));
-              return [...prev, ...newOnes];
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch CDSC companies:", err);
-      }
-    };
-    fetchCDSC();
 
     return () => {
       unsubscribeIpos();
@@ -356,7 +325,7 @@ function AppContent() {
                 {liveOversubscription.length > 0 ? (
                   <div className="space-y-8">
                     {liveOversubscription.slice(0, 3).map((ipo, idx) => (
-                      <div key={ipo.id} className={cn(
+                      <div key={ipo.id || `live-${idx}`} className={cn(
                         "pb-6 border-b last:border-0 last:pb-0",
                         isDark ? "border-white/5" : "border-slate-100"
                       )}>
@@ -464,8 +433,8 @@ function AppContent() {
             <h2 className={cn("text-3xl font-black", isDark ? "text-white" : "text-slate-900")}>{t.recentResults}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ipos.slice(0, 2).map((ipo) => (
-              <div key={ipo.id} className={cn(
+            {ipos.slice(0, 2).map((ipo, idx) => (
+              <div key={ipo.id || `recent-${idx}`} className={cn(
                 "p-6 rounded-2xl border transition-all",
                 isDark ? "bg-white/5 border-white/10 hover:border-white/30" : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
               )}>
