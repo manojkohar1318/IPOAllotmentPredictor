@@ -252,14 +252,14 @@ function AppContent() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button 
                 onClick={() => setCurrentPage('predictor')}
-                className="btn-gold text-lg px-10 py-5 flex items-center gap-3 group"
+                className="btn-gold text-lg px-10 py-5 flex items-center justify-center gap-3 group w-full sm:w-72"
               >
                 {t.checkChances} <Sparkles className="w-6 h-6 group-hover:scale-110 transition-transform" />
               </button>
               <button 
                 onClick={() => setCurrentPage('ipo-result')}
                 className={cn(
-                  "px-10 py-5 rounded-xl font-bold border transition-all flex items-center gap-3",
+                  "px-10 py-5 rounded-xl font-bold border transition-all flex items-center justify-center gap-3 w-full sm:w-72",
                   isDark ? "bg-emerald-600/20 border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 text-emerald-600"
                 )}
               >
@@ -268,16 +268,18 @@ function AppContent() {
               <button 
                 onClick={() => setCurrentPage('oversubscription')}
                 className={cn(
-                  "px-10 py-5 rounded-xl font-bold border transition-all flex items-center gap-3",
+                  "px-10 py-5 rounded-xl font-bold border transition-all flex items-center justify-center gap-3 w-full sm:w-72",
                   isDark ? "bg-indigo-600/20 border-indigo-500/30 hover:bg-indigo-600/30 text-indigo-400" : "bg-indigo-50 border-indigo-200 hover:bg-indigo-100 text-indigo-600"
                 )}
               >
                 <Calculator className="w-6 h-6" /> {t.oversubscriptionChecker}
               </button>
+            </div>
+            <div className="flex justify-center mt-6">
               <button 
                 onClick={() => setCurrentPage('education')}
                 className={cn(
-                  "px-10 py-5 rounded-xl font-bold border transition-all",
+                  "px-8 py-3 rounded-xl font-bold border transition-all text-sm",
                   isDark ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-900"
                 )}
               >

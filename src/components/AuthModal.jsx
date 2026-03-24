@@ -11,7 +11,9 @@ import {
   doc,
   setDoc,
   getDoc,
-  serverTimestamp
+  serverTimestamp,
+  handleFirestoreError,
+  OperationType
 } from '../firebase';
 import { cn } from '../cn';
 
@@ -23,20 +25,25 @@ export const AuthModal = ({ isOpen, onClose, isDark, onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
 
   const handleAuthSuccess = async (user) => {
-    // Check if user exists in Firestore, if not create
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const userDoc = await getDoc(userDocRef);
-    
-    if (!userDoc.exists()) {
-      await setDoc(userDocRef, {
-        email: user.email,
-        savedBoids: [],
-        createdAt: serverTimestamp()
-      });
+    try {
+      // Check if user exists in Firestore, if not create
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        await setDoc(userDocRef, {
+          email: user.email,
+          savedBoids: [],
+          createdAt: serverTimestamp()
+        });
+      }
+      
+      onAuthSuccess && onAuthSuccess(user);
+      onClose();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+      setError('Failed to sync user data. Please try again.');
     }
-    
-    onAuthSuccess && onAuthSuccess(user);
-    onClose();
   };
 
   const handleSubmit = async (e) => {
@@ -68,7 +75,14 @@ export const AuthModal = ({ isOpen, onClose, isDark, onAuthSuccess }) => {
       await handleAuthSuccess(result.user);
     } catch (err) {
       console.error('Google sign-in error:', err);
-      setError(err.message);
+      // Handle the case where the user closes the popup
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in cancelled. Please complete the process in the popup.');
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        setError('Sign-in request cancelled. Please try again.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

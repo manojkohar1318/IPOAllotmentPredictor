@@ -73,6 +73,17 @@
         "totalPredictions": { "type": "number", "description": "Total number of predictions made" },
         "totalUsers": { "type": "number", "description": "Total number of registered users" }
       }
+    },
+    "IpoResult": {
+      "title": "IpoResult",
+      "description": "IPO whose results are published",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Company name" },
+        "companyId": { "type": "string", "description": "Actual ID used for CDSC result check" },
+        "status": { "type": "string", "description": "Status (e.g., result_published)" }
+      },
+      "required": ["name", "companyId"]
     }
   },
   "firestore": {
@@ -81,6 +92,7 @@
     "/users/{userId}": { "schema": "User", "description": "User profiles" },
     "/oversubscription/{companyId}": { "schema": "Oversubscription", "description": "Oversubscription data" },
     "/predictions/{predictionId}": { "schema": "Prediction", "description": "Log of user predictions" },
-    "/stats/{statId}": { "schema": "Stat", "description": "Global stats" }
+    "/stats/{statId}": { "schema": "Stat", "description": "Global stats" },
+    "/ipo_results_list/{ipoId}": { "schema": "IpoResult", "description": "List of IPOs with published results" }
   }
 }

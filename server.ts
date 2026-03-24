@@ -10,6 +10,14 @@ import ipoListHandler from "./api/ipo-list.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// In-memory cache for IPO results to minimize CDSC requests
+const resultCache = new Map();
+// User cooldowns for bulk requests (60 seconds)
+const userCooldowns = new Map();
+
+// Helper function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -51,83 +59,177 @@ async function startServer() {
   // Single IPO Result Check
   app.post("/api/check-ipo-result", async (req, res) => {
     const { companyShareId, boid } = req.body;
+    const userIp = req.ip;
     
     if (!companyShareId || !boid) {
       return res.status(400).json({ success: false, message: "Missing companyShareId or boid" });
     }
 
+    // Check cache first
+    const cacheKey = `${companyShareId}-${boid}`;
+    if (resultCache.has(cacheKey)) {
+      console.log(`Returning cached result for ${boid}`);
+      return res.json(resultCache.get(cacheKey));
+    }
+
     try {
-      const response = await axios.post("https://iporesult.cdsc.com.np/api/check-result", {
-        companyShareId,
-        boid
-      }, {
+      // Use the requested URL and form data
+      const params = new URLSearchParams();
+      params.append('boid', boid);
+      params.append('company', companyShareId);
+
+      const response = await axios.post("https://iporesult.cdsc.com.np/", params, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Origin': 'https://iporesult.cdsc.com.np',
-          'Referer': 'https://iporesult.cdsc.com.np/'
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Referer": "https://iporesult.cdsc.com.np/",
+          "Origin": "https://iporesult.cdsc.com.np"
         },
-        timeout: 10000
+        timeout: 15000
       });
 
-      res.json({
-        success: true,
-        status: response.data.success ? "Allotted" : "Not Allotted",
-        units: response.data.allotmentQuantity || 0,
-        message: response.data.message
-      });
+      const html = response.data;
+      const $ = cheerio.load(html);
+      
+      // The response HTML structure for CDSC IPO result usually contains the status in a specific div or text
+      // We'll look for common success/failure indicators
+      const text = $("body").text();
+      
+      let status = "Not Allotted";
+      let units = 0;
+      let success = true;
+      let message = "";
+
+      if (text.includes("Congratulations") || text.includes("Allotted")) {
+        status = "Allotted";
+        // Try to extract units (usually "allotted 10 units")
+        const match = text.match(/allotted\s+(\d+)\s+units/i);
+        units = match ? parseInt(match[1]) : 10;
+      } else if (text.includes("Sorry") || text.includes("not been allotted")) {
+        status = "Not Allotted";
+        message = "Sorry, you have not been allotted any units.";
+      } else if (text.includes("Invalid") || text.includes("not found")) {
+        success = false;
+        message = "Invalid BOID or Company selection";
+      }
+
+      const result = {
+        success,
+        status,
+        units,
+        message
+      };
+
+      // Cache the result if successful
+      if (success) {
+        resultCache.set(cacheKey, result);
+        // Clear cache after 1 hour
+        setTimeout(() => resultCache.delete(cacheKey), 60 * 60 * 1000);
+      }
+
+      res.json(result);
     } catch (error) {
       console.error("Error checking IPO result:", error.message);
-      res.status(500).json({ success: false, message: "Failed to check result from CDSC", details: error.message });
+      res.status(500).json({ success: false, message: "Could not fetch IPO result", details: error.message });
     }
   });
 
-  // Bulk IPO Result Check
+  // Bulk IPO Result Check (Safe System)
   app.post("/api/check-bulk-ipo-result", async (req, res) => {
     const { companyShareId, boids } = req.body;
+    const userIp = req.ip;
     
     if (!companyShareId || !boids || !Array.isArray(boids)) {
       return res.status(400).json({ success: false, message: "Missing companyShareId or boids array" });
     }
 
+    // Limit BOIDs per request
+    if (boids.length > 10) {
+      return res.status(400).json({ success: false, message: "Max 10 BOIDs allowed per bulk request" });
+    }
+
+    // Cooldown check (60 seconds)
+    const now = Date.now();
+    if (userCooldowns.has(userIp)) {
+      const lastRequest = userCooldowns.get(userIp);
+      if (now - lastRequest < 60000) {
+        const remaining = Math.ceil((60000 - (now - lastRequest)) / 1000);
+        return res.status(429).json({ 
+          success: false, 
+          message: `Please wait ${remaining} seconds before another bulk check.` 
+        });
+      }
+    }
+    userCooldowns.set(userIp, now);
+
     const results = [];
     
-    // Process BOIDs one by one with delay
+    // Process BOIDs ONE BY ONE with delay (Queue System)
     for (const boid of boids) {
-      try {
-        const response = await axios.post("https://iporesult.cdsc.com.np/api/check-result", {
-          companyShareId,
-          boid
-        }, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Origin': 'https://iporesult.cdsc.com.np',
-            'Referer': 'https://iporesult.cdsc.com.np/'
-          },
-          timeout: 10000
+      // Check cache first
+      const cacheKey = `${companyShareId}-${boid}`;
+      if (resultCache.has(cacheKey)) {
+        results.push({
+          boid,
+          ...resultCache.get(cacheKey)
         });
+        continue;
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.append('boid', boid);
+        params.append('company', companyShareId);
+
+        const response = await axios.post("https://iporesult.cdsc.com.np/", params, {
+          headers: {
+            "User-Agent": "Mozilla/5.0",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Referer": "https://iporesult.cdsc.com.np/"
+          },
+          timeout: 15000
+        });
+
+        const $ = cheerio.load(response.data);
+        const text = $("body").text();
+        
+        let status = "Not Allotted";
+        let units = 0;
+        let success = true;
+
+        if (text.includes("Congratulations") || text.includes("Allotted")) {
+          status = "Allotted";
+          const match = text.match(/allotted\s+(\d+)\s+units/i);
+          units = match ? parseInt(match[1]) : 10;
+        }
+
+        const result = {
+          success,
+          status,
+          units
+        };
+
+        // Cache result
+        resultCache.set(cacheKey, result);
+        setTimeout(() => resultCache.delete(cacheKey), 60 * 60 * 1000);
 
         results.push({
           boid,
-          status: response.data.success ? "Allotted" : "Not Allotted",
-          units: response.data.allotmentQuantity || 0,
-          message: response.data.message
+          ...result
         });
       } catch (error) {
         console.error(`Error checking result for BOID ${boid}:`, error.message);
         results.push({
           boid,
+          success: false,
           status: "Error",
           units: 0,
           message: "Failed to fetch"
         });
       }
 
-      // Add delay: 2–3 seconds between requests as requested
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      // Add delay: 2.5 seconds minimum between requests
+      await delay(2500);
     }
 
     res.json({

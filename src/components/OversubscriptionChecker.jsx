@@ -6,7 +6,9 @@ import { cn } from '../cn';
 import { 
   firestore, 
   collection, 
-  onSnapshot 
+  onSnapshot,
+  handleFirestoreError,
+  OperationType 
 } from '../firebase';
 
 export const OversubscriptionChecker = ({ lang, isDark }) => {
@@ -50,7 +52,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
         }
         setLoading(false);
       }, (err) => {
-        console.error(err);
+        handleFirestoreError(err, OperationType.LIST, 'oversubscription');
         fetchFromAPI();
         setLoading(false);
       });
@@ -167,9 +169,9 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
                   }}
                   disabled={loading}
                 >
-                  <option value="" disabled>{loading ? "Loading IPO data..." : "-- Select Active IPO --"}</option>
+                  <option value="" disabled className="bg-white dark:bg-navy-900 text-slate-900 dark:text-white">{loading ? "Loading IPO data..." : "-- Select Active IPO --"}</option>
                   {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
+                    <option key={company.id} value={company.id} className="bg-white dark:bg-navy-900 text-slate-900 dark:text-white">
                       {company.name}
                     </option>
                   ))}

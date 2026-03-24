@@ -35,12 +35,16 @@ import {
 export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdownData, isDark, liveOversubscription = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOverSubModalOpen, setIsOverSubModalOpen] = useState(false);
+  const [isIpoResultModalOpen, setIsIpoResultModalOpen] = useState(false);
   const [editingIpo, setEditingIpo] = useState(null);
   const [editingOverSub, setEditingOverSub] = useState(null);
+  const [editingIpoResult, setEditingIpoResult] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [overSubSearchQuery, setOverSubSearchQuery] = useState('');
+  const [ipoResultSearchQuery, setIpoResultSearchQuery] = useState('');
   const [error, setError] = useState(null);
   const [overSubData, setOverSubData] = useState([]);
+  const [ipoResultsListData, setIpoResultsListData] = useState([]);
   const [liveOverSubData, setLiveOverSubData] = useState(liveOversubscription);
   const [isFetchingLive, setIsFetchingLive] = useState(false);
 
@@ -56,8 +60,22 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
       handleFirestoreError(error, OperationType.LIST, 'oversubscription');
     });
 
+    const ipoResultsCollection = collection(firestore, 'ipo_results_list');
+    const unsubscribeIpoResults = onSnapshot(ipoResultsCollection, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setIpoResultsListData(list);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'ipo_results_list');
+    });
+
     fetchLiveOversubscription();
-    return () => unsubscribeOverSub();
+    return () => {
+      unsubscribeOverSub();
+      unsubscribeIpoResults();
+    };
   }, []);
 
   const fetchLiveOversubscription = async () => {
@@ -103,6 +121,12 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     lastUpdated: new Date().toISOString()
   });
 
+  const [ipoResultFormData, setIpoResultFormData] = useState({
+    name: '',
+    companyId: '',
+    status: 'result_published'
+  });
+
   // Sync countdown form when data changes from Firebase
   useEffect(() => {
     if (countdownData) {
@@ -131,6 +155,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
   };
 
   const [isFetchingCDSC, setIsFetchingCDSC] = useState(false);
+  const [isFetchingCDSCResults, setIsFetchingCDSCResults] = useState(false);
 
   const fetchFromCDSC = async () => {
     setIsFetchingCDSC(true);
@@ -177,6 +202,43 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
       setError("Failed to fetch data from CDSC. The API might be down or blocked.");
     } finally {
       setIsFetchingCDSC(false);
+    }
+  };
+
+  const fetchCDSCResults = async () => {
+    setIsFetchingCDSCResults(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/cdsc-companies');
+      if (!response.ok) throw new Error('Failed to fetch from CDSC');
+      const result = await response.json();
+      
+      if (result.body) {
+        const companies = result.body;
+        
+        if (window.confirm(`Found ${companies.length} companies with published results from CDSC. Would you like to sync them to your IPO Results list?`)) {
+          const ipoResultsCollection = collection(firestore, 'ipo_results_list');
+          
+          for (const company of companies) {
+            // Check if already exists
+            const exists = ipoResultsListData.find(item => item.companyId === String(company.id));
+            if (!exists) {
+              // Add new
+              await addDoc(ipoResultsCollection, {
+                name: company.name,
+                companyId: String(company.id),
+                status: 'result_published'
+              });
+            }
+          }
+          alert('CDSC IPO Results synced successfully!');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch results list from CDSC.");
+    } finally {
+      setIsFetchingCDSCResults(false);
     }
   };
 
@@ -279,6 +341,46 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     }
   };
 
+  const handleOpenIpoResultModal = (data) => {
+    if (data) {
+      setEditingIpoResult(data);
+      setIpoResultFormData(data);
+    } else {
+      setEditingIpoResult(null);
+      setIpoResultFormData({
+        name: '',
+        companyId: '',
+        status: 'result_published'
+      });
+    }
+    setIsIpoResultModalOpen(true);
+  };
+
+  const handleIpoResultSubmit = (e) => {
+    e.preventDefault();
+    if (editingIpoResult) {
+      const ipoResultDoc = doc(firestore, 'ipo_results_list', editingIpoResult.id);
+      setDoc(ipoResultDoc, ipoResultFormData)
+        .then(() => setIsIpoResultModalOpen(false))
+        .catch(err => handleFirestoreError(err, OperationType.UPDATE, `ipo_results_list/${editingIpoResult.id}`));
+    } else {
+      const ipoResultsCollection = collection(firestore, 'ipo_results_list');
+      addDoc(ipoResultsCollection, ipoResultFormData)
+        .then(() => setIsIpoResultModalOpen(false))
+        .catch(err => handleFirestoreError(err, OperationType.CREATE, 'ipo_results_list'));
+    }
+  };
+
+  const handleIpoResultDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this IPO result entry?')) return;
+    try {
+      const ipoResultDoc = doc(firestore, 'ipo_results_list', id);
+      await deleteDoc(ipoResultDoc);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `ipo_results_list/${id}`);
+    }
+  };
+
   const filteredIpos = ipos.filter(ipo => 
     ipo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ipo.nameNP.includes(searchQuery)
@@ -286,6 +388,11 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
 
   const filteredOverSub = overSubData.filter(item => 
     item.name.toLowerCase().includes(overSubSearchQuery.toLowerCase())
+  );
+
+  const filteredIpoResults = ipoResultsListData.filter(item => 
+    item.name.toLowerCase().includes(ipoResultSearchQuery.toLowerCase()) ||
+    item.companyId.toLowerCase().includes(ipoResultSearchQuery.toLowerCase())
   );
 
   return (
@@ -310,7 +417,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
               }
             }}
             className={cn(
-              "px-6 py-4 rounded-xl font-bold border transition-all",
+              "px-8 py-4 rounded-xl font-bold border transition-all min-w-[200px]",
               isDark ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-900"
             )}
           >
@@ -318,7 +425,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
           </button>
           <button 
             onClick={() => handleOpenModal()}
-            className="btn-gold px-8 py-4 flex items-center gap-2"
+            className="btn-gold px-8 py-4 flex items-center justify-center gap-2 min-w-[200px]"
           >
             <Plus className="w-5 h-5" /> Add New IPO
           </button>
@@ -487,7 +594,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
               onClick={fetchFromCDSC}
               disabled={isFetchingCDSC}
               className={cn(
-                "px-6 py-3 rounded-xl font-bold border transition-all flex items-center gap-2",
+                "px-6 py-3 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 min-w-[180px]",
                 isDark ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-900"
               )}
             >
@@ -496,7 +603,7 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
             </button>
             <button 
               onClick={() => handleOpenOverSubModal()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 min-w-[180px]"
             >
               <Plus className="w-5 h-5" /> Add Data
             </button>
@@ -548,6 +655,99 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
                       </button>
                       <button 
                         onClick={() => handleOverSubDelete(item.id)}
+                        className={cn(
+                          "p-2 rounded-lg transition-all",
+                          isDark ? "bg-white/5 hover:bg-red-500/20 hover:text-red-500" : "bg-slate-100 hover:bg-red-100 hover:text-red-600"
+                        )}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* IPO Results List Management */}
+      <div className={cn(
+        "glass rounded-[2.5rem] border p-8 mb-12",
+        isDark ? "border-white/10" : "border-slate-200 bg-white/50"
+      )}>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className={cn("text-2xl font-bold flex items-center gap-2", isDark ? "text-white" : "text-slate-900")}>
+            <CheckCircle2 className="text-emerald-500" /> Manage IPO Results List
+          </h2>
+          <div className="flex gap-4">
+            <button 
+              onClick={fetchCDSCResults}
+              disabled={isFetchingCDSCResults}
+              className={cn(
+                "px-6 py-3 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 min-w-[180px]",
+                isDark ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-900"
+              )}
+            >
+              {isFetchingCDSCResults ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+              Sync with CDSC Results
+            </button>
+            <button 
+              onClick={() => handleOpenIpoResultModal()}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 min-w-[180px]"
+            >
+              <Plus className="w-5 h-5" /> Add IPO Result
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-6 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+          <input 
+            type="text"
+            placeholder="Search IPO results list..."
+            value={ipoResultSearchQuery}
+            onChange={(e) => setIpoResultSearchQuery(e.target.value)}
+            className={cn(
+              "w-full border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all",
+              isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+            )}
+          />
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className={cn("border-b", isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200")}>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Company Name</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Company ID</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className={cn("divide-y", isDark ? "divide-white/5" : "divide-slate-100")}>
+              {filteredIpoResults.map((item) => (
+                <tr key={item.id} className={cn("transition-colors", isDark ? "hover:bg-white/5" : "hover:bg-slate-50")}>
+                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{item.name}</td>
+                  <td className="px-6 py-4 font-mono text-sm text-slate-700 dark:text-slate-300">{item.companyId}</td>
+                  <td className="px-6 py-4">
+                    <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-1 rounded-full uppercase">
+                      {item.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => handleOpenIpoResultModal(item)}
+                        className={cn(
+                          "p-2 rounded-lg transition-all",
+                          isDark ? "bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-500" : "bg-slate-100 hover:bg-emerald-100 hover:text-emerald-600"
+                        )}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleIpoResultDelete(item.id)}
                         className={cn(
                           "p-2 rounded-lg transition-all",
                           isDark ? "bg-white/5 hover:bg-red-500/20 hover:text-red-500" : "bg-slate-100 hover:bg-red-100 hover:text-red-600"
@@ -632,6 +832,81 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
                 </div>
                 <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
                   <Save className="w-5 h-5" /> Save Data
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* IPO Result Modal */}
+      <AnimatePresence>
+        {isIpoResultModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsIpoResultModalOpen(false)}
+              className="absolute inset-0 bg-navy-950/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative w-full max-w-md glass rounded-[2.5rem] border overflow-hidden shadow-2xl",
+                isDark ? "border-white/10" : "border-slate-200 bg-white"
+              )}
+            >
+              <div className={cn("p-8 border-b flex items-center justify-between", isDark ? "border-white/10" : "border-slate-100")}>
+                <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>{editingIpoResult ? 'Edit IPO Result' : 'Add IPO Result'}</h2>
+                <button onClick={() => setIsIpoResultModalOpen(false)} className={cn("p-2 rounded-xl transition-all", isDark ? "hover:bg-white/5 text-white" : "hover:bg-slate-100 text-slate-900")}>
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleIpoResultSubmit} className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Company Name</label>
+                  <input 
+                    required
+                    value={ipoResultFormData.name}
+                    onChange={(e) => setIpoResultFormData({...ipoResultFormData, name: e.target.value})}
+                    className={cn(
+                      "w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50",
+                      isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Company ID (from CDSC)</label>
+                  <input 
+                    required
+                    value={ipoResultFormData.companyId}
+                    onChange={(e) => setIpoResultFormData({...ipoResultFormData, companyId: e.target.value})}
+                    className={cn(
+                      "w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-mono",
+                      isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Status</label>
+                  <select 
+                    value={ipoResultFormData.status}
+                    onChange={(e) => setIpoResultFormData({...ipoResultFormData, status: e.target.value})}
+                    className={cn(
+                      "w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50",
+                      isDark ? "bg-navy-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+                    )}
+                  >
+                    <option value="result_published">Result Published</option>
+                    <option value="upcoming">Upcoming</option>
+                  </select>
+                </div>
+                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                  <Save className="w-5 h-5" /> Save Result Entry
                 </button>
               </form>
             </motion.div>
