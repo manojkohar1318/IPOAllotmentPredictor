@@ -12,6 +12,11 @@ const __dirname = path.dirname(__filename);
 
 // In-memory cache for IPO results to minimize CDSC requests
 const resultCache = new Map();
+// Cache for IPO result company list (1 hour)
+let ipoResultListCache = {
+  data: null,
+  timestamp: 0
+};
 // User cooldowns for bulk requests (60 seconds)
 const userCooldowns = new Map();
 
@@ -53,6 +58,72 @@ async function startServer() {
     } catch (error) {
       console.error("Error fetching CDSC companies:", error.message);
       res.status(500).json({ error: "Failed to fetch from CDSC", details: error.message });
+    }
+  });
+
+  // Dynamic IPO Result Company List (HTML Parsing with 1-hour cache)
+  app.get("/api/get-ipo-result-list", async (req, res) => {
+    const now = Date.now();
+    const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+    // Return cache if valid
+    if (ipoResultListCache.data && (now - ipoResultListCache.timestamp < CACHE_DURATION)) {
+      return res.json({ success: true, data: ipoResultListCache.data, cached: true });
+    }
+
+    try {
+      const response = await axios.get("https://iporesult.cdsc.com.np/", {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          "Accept": "text/html"
+        },
+        timeout: 15000
+      });
+
+      const $ = cheerio.load(response.data);
+      const options = [];
+      
+      // Find the company selection dropdown
+      // Usually it's the only select or has a specific ID/name
+      $("select").each((i, el) => {
+        const $el = $(el);
+        // We look for the select that has many options (the company list)
+        if ($el.find("option").length > 5) {
+          $el.find("option").each((j, opt) => {
+            const value = $(opt).val();
+            const name = $(opt).text().trim();
+            // Ignore empty values or default "Select Company" text
+            if (value && value !== "" && !name.toLowerCase().includes("select")) {
+              options.push({ name, companyId: value });
+            }
+          });
+        }
+      });
+
+      if (options.length === 0) {
+        throw new Error("No companies found in HTML content");
+      }
+
+      // Update cache
+      ipoResultListCache = {
+        data: options,
+        timestamp: now
+      };
+
+      res.json({ success: true, data: options });
+    } catch (error) {
+      console.error("Error scraping IPO result list:", error.message);
+      
+      // Return stale cache if available on error
+      if (ipoResultListCache.data) {
+        return res.json({ success: true, data: ipoResultListCache.data, stale: true });
+      }
+      
+      res.status(500).json({ 
+        success: false, 
+        message: "Unable to load IPO list from CDSC", 
+        details: error.message 
+      });
     }
   });
 

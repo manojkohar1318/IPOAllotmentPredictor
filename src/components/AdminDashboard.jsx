@@ -209,34 +209,38 @@ export const AdminDashboard = ({ lang, ipos, setIpos, countdownData, setCountdow
     setIsFetchingCDSCResults(true);
     setError(null);
     try {
-      const response = await fetch('/api/cdsc-companies');
+      const response = await fetch('/api/get-ipo-result-list');
       if (!response.ok) throw new Error('Failed to fetch from CDSC');
       const result = await response.json();
       
-      if (result.body) {
-        const companies = result.body;
+      if (result.success && result.data) {
+        const companies = result.data;
         
-        if (window.confirm(`Found ${companies.length} companies with published results from CDSC. Would you like to sync them to your IPO Results list?`)) {
+        if (window.confirm(`Found ${companies.length} companies with published results from CDSC. Would you like to sync them to your IPO Results list in Firestore?`)) {
           const ipoResultsCollection = collection(firestore, 'ipo_results_list');
           
+          let addedCount = 0;
           for (const company of companies) {
             // Check if already exists
-            const exists = ipoResultsListData.find(item => item.companyId === String(company.id));
+            const exists = ipoResultsListData.find(item => item.companyId === String(company.companyId));
             if (!exists) {
               // Add new
               await addDoc(ipoResultsCollection, {
                 name: company.name,
-                companyId: String(company.id),
+                companyId: String(company.companyId),
                 status: 'result_published'
               });
+              addedCount++;
             }
           }
-          alert('CDSC IPO Results synced successfully!');
+          alert(`Sync complete! Added ${addedCount} new companies to your list.`);
         }
+      } else {
+        throw new Error(result.message || 'No data found');
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to fetch results list from CDSC.");
+      setError("Failed to fetch results list from CDSC: " + err.message);
     } finally {
       setIsFetchingCDSCResults(false);
     }

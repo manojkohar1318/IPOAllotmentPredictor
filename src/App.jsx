@@ -47,6 +47,75 @@ import {
   OperationType 
 } from './firebase';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Something went wrong. Please try refreshing the page.";
+      let isFirestoreError = false;
+
+      try {
+        const parsedError = JSON.parse(this.state.error.message);
+        if (parsedError.error && parsedError.operationType) {
+          isFirestoreError = true;
+          if (parsedError.error.includes('unavailable') || parsedError.error.includes('client is offline')) {
+            errorMessage = "Unable to connect to the database. This might be due to a network issue or incorrect configuration. Please check your internet connection and try again.";
+          } else if (parsedError.error.includes('permission-denied')) {
+            errorMessage = "You don't have permission to perform this action. Please make sure you are logged in with the correct account.";
+          } else {
+            errorMessage = `Database Error: ${parsedError.error}`;
+          }
+        }
+      } catch (e) {
+        // Not a JSON error message
+        if (this.state.error.message.includes('unavailable') || this.state.error.message.includes('client is offline')) {
+          errorMessage = "Unable to connect to the database. Please check your internet connection.";
+        }
+      }
+
+      return (
+        <div className={cn(
+          "min-h-screen flex items-center justify-center p-4 text-center",
+          this.props.isDark ? "bg-navy-950 text-white" : "bg-slate-50 text-slate-900"
+        )}>
+          <div className="max-w-md space-y-6">
+            <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-10 h-10 text-red-500" />
+            </div>
+            <h1 className="text-3xl font-black">Oops!</h1>
+            <p className="text-lg opacity-80">{errorMessage}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="btn-gold px-8 py-4 w-full"
+            >
+              Refresh Page
+            </button>
+            {isFirestoreError && (
+              <p className="text-xs opacity-50">
+                Error Code: {JSON.parse(this.state.error.message).operationType}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function AppContent() {
   const [lang, setLang] = useState('EN');
   const [currentPage, setCurrentPage] = useState('home');
@@ -606,5 +675,17 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AppContent />;
+  const [isDark, setIsDark] = useState(true);
+  
+  // Sync dark mode for ErrorBoundary
+  useEffect(() => {
+    const dark = document.documentElement.classList.contains('dark');
+    setIsDark(dark);
+  }, []);
+
+  return (
+    <ErrorBoundary isDark={isDark}>
+      <AppContent />
+    </ErrorBoundary>
+  );
 }

@@ -7,27 +7,31 @@ service cloud.firestore {
     //
     // Collection: ipos
     // Document ID: auto-generated or custom
-    // Fields: name, symbol, type, status, openDate, closeDate, units, price, manager, description, createdAt
+    // Fields: name, symbol, sector, price, units, openingDate, closingDate, status, type, minUnits, maxUnits, issueManager
     //
     // Collection: countdown
     // Document ID: main
-    // Fields: company, targetDate
+    // Fields: targetDate, title, isActive
     //
     // Collection: users
     // Document ID: Firebase Auth UID
-    // Fields: email, savedBoids, createdAt
+    // Fields: email, savedBoids, createdAt, role
     //
     // Collection: oversubscription
-    // Document ID: auto-generated or custom
-    // Fields: name, issuedUnits, appliedUnits, lastUpdated
+    // Document ID: companyId
+    // Fields: name, times, applicants, units, lastUpdated
     //
     // Collection: predictions
     // Document ID: auto-generated
-    // Fields: userId, ipoId, accounts, result, createdAt
+    // Fields: ipoName, units, chance, userId, timestamp
     //
     // Collection: stats
     // Document ID: auto-generated or custom
-    // Fields: totalPredictions, successfulAllotments
+    // Fields: totalPredictions, totalUsers
+    //
+    // Collection: ipo_results_list
+    // Document ID: auto-generated or custom
+    // Fields: name, companyId, status
     //
     // ===============================================================
 
@@ -52,29 +56,41 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.keys().hasAll(['email']) &&
              data.email is string &&
-             (!('savedBoids' in data) || data.savedBoids is list);
+             (!('savedBoids' in data) || data.savedBoids is list) &&
+             (!('role' in data) || data.role in ['user', 'admin']);
     }
 
     function isValidIpo(data) {
-      return data.keys().hasAll(['name', 'symbol', 'type', 'status']) &&
-             data.name is string && data.symbol is string;
+      return data.keys().hasAll(['name', 'symbol', 'price', 'status']) &&
+             data.name is string && data.symbol is string && data.price is number;
     }
 
     function isValidCountdown(data) {
-      return data.keys().hasAll(['company', 'targetDate']) &&
-             data.company is string && data.targetDate is string;
+      return data.keys().hasAll(['targetDate', 'title']) &&
+             data.targetDate is string && data.title is string;
     }
 
     function isValidOversubscription(data) {
-      return data.keys().hasAll(['name', 'issuedUnits', 'appliedUnits']) &&
-             data.name is string && data.issuedUnits is number && data.appliedUnits is number;
+      return data.keys().hasAll(['name', 'times', 'applicants', 'units']) &&
+             data.name is string && data.times is number && data.applicants is number && data.units is number;
     }
 
     function isValidPrediction(data) {
-      return data.keys().hasAll(['userId', 'ipoId', 'accounts', 'result']) &&
+      return data.keys().hasAll(['ipoName', 'units', 'chance', 'userId', 'timestamp']) &&
              data.userId == request.auth.uid &&
-             data.ipoId is string &&
-             data.accounts is number;
+             data.ipoName is string &&
+             data.units is number &&
+             data.chance is number;
+    }
+
+    function isValidIpoResult(data) {
+      return data.keys().hasAll(['name', 'companyId']) &&
+             data.name is string && data.companyId is string;
+    }
+
+    function isValidStat(data) {
+      return (!('totalPredictions' in data) || data.totalPredictions is number) &&
+             (!('totalUsers' in data) || data.totalUsers is number);
     }
 
     // ===============================================================
@@ -83,13 +99,15 @@ service cloud.firestore {
 
     match /ipo_results_list/{ipoId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isValidIpoResult(request.resource.data);
     }
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == 'user' || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == resource.data.role || isAdmin());
     }
 
     match /ipos/{ipoId} {
@@ -102,11 +120,9 @@ service cloud.firestore {
       allow write: if isAdmin() && isValidCountdown(request.resource.data);
     }
 
-    match /oversubscription/{ipoId} {
+    match /oversubscription/{companyId} {
       allow read: if true;
-      allow write: if isAdmin() || isAuthenticated(); // Allow users to update if app logic requires
-      // Actually, better to restrict write to admin if it's scraped data
-      // allow write: if isAdmin() && isValidOversubscription(request.resource.data);
+      allow write: if isAdmin() && isValidOversubscription(request.resource.data);
     }
 
     match /predictions/{predictionId} {
@@ -117,7 +133,7 @@ service cloud.firestore {
 
     match /stats/{statId} {
       allow read: if true;
-      allow write: if isAuthenticated(); // Allow users to increment stats
+      allow write: if isAdmin() || isAuthenticated(); // Allow users to increment stats if app logic requires
     }
 
     // Default deny

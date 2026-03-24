@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, addDoc, deleteDoc, onSnapshot, getDocs, query, where, orderBy, limit, increment } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, addDoc, deleteDoc, onSnapshot, getDocs, query, where, orderBy, limit, increment, getDocFromServer } from "firebase/firestore";
 
 // Import the Firebase configuration
 import firebaseConfig from '../firebase-applet-config.json';
@@ -9,6 +9,18 @@ import firebaseConfig from '../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const firestore = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// Test Firestore connection
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(firestore, 'test', 'connection'));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Firestore connection failed: The client is offline. Please check your Firebase configuration.");
+    }
+  }
+}
+testConnection();
 
 const googleProvider = new GoogleAuthProvider();
 

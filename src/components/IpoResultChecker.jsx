@@ -60,42 +60,30 @@ export const IpoResultChecker = ({ lang, isDark, setCurrentPage }) => {
       }
     });
 
-    // Fetch companies from Firestore
-    const ipoResultsCollection = collection(firestore, 'ipo_results_list');
-    const unsubscribeCompanies = onSnapshot(ipoResultsCollection, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      // Sort by name
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      setCompanies(list);
-    }, (err) => {
-      console.error('Failed to fetch companies from Firestore:', err);
-      // Fallback to API if Firestore fails or is empty
-      fetchCompanies();
-    });
+    fetchCompanies();
 
     return () => {
       unsubscribeAuth();
-      unsubscribeCompanies();
     };
   }, []);
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/cdsc-companies');
-      if (response.ok) {
-        const data = await response.json();
-        const list = (data.body || []).map(c => ({
-          id: String(c.id),
-          companyId: String(c.id),
+      const response = await fetch('/api/get-ipo-result-list');
+      const data = await response.json();
+      if (data.success) {
+        const list = data.data.map(c => ({
+          id: c.companyId,
+          companyId: c.companyId,
           name: c.name
         }));
         setCompanies(list);
+      } else {
+        throw new Error(data.message || 'Failed to load IPO list');
       }
     } catch (err) {
-      console.error('Fallback fetch failed:', err);
+      console.error('Failed to fetch companies:', err);
+      setError('Failed to load IPO list from CDSC. Please try refreshing.');
     }
   };
 
