@@ -42,12 +42,9 @@ export const Navbar = ({ lang, setLang, currentPage, setCurrentPage, isDark, set
   }, []);
 
   const navLinks = [
-    { id: 'home', label: 'Dashboard', icon: Home },
-    { id: 'ipo-result', label: 'Check IPO Result', icon: Search },
-    { id: 'oversubscription', label: 'Oversubscription Checker', icon: Calculator },
-    { id: 'predictor', label: 'Allotment Predictor', icon: TrendingUp },
-    { id: 'education', label: t.education, icon: BookOpen },
-    { id: 'about', label: t.about, icon: Info },
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'blog', label: 'Blog', icon: BookOpen },
+    { id: 'about', label: 'About', icon: Info },
     { id: 'contact', label: 'Contact', icon: Phone },
   ];
 

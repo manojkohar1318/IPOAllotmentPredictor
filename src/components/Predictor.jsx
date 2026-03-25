@@ -16,6 +16,7 @@ import {
   Sparkles,
   RefreshCw
 } from 'lucide-react';
+import { ARTICLES } from '../lib/articles';
 import { TRANSLATIONS } from '../constants';
 import { cn } from '../cn';
 import ReactConfetti from 'react-confetti';
@@ -35,9 +36,8 @@ import {
   OperationType 
 } from '../firebase';
 import { FUNNY_COMMENTS } from '../utils/comments';
-import { AdsterraNativeBanner } from './AdsterraNativeBanner';
 
-export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage }) => {
+export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage, setCurrentSlug }) => {
   const [step, setStep] = useState('form');
   const [loading, setLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -464,6 +464,12 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
     }
   };
 
+  const handleFacebookShare = () => {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(`I just predicted my NEPSE IPO allotment chances for ${result?.companyName}! My probability is ${result?.probability}%. Check yours here:`);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank');
+  };
+
   const handleDownload = async () => {
     if (!result || isDownloading) return;
     
@@ -490,20 +496,21 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       {result && result.probability > 70 && step === 'result' && (
         <ReactConfetti recycle={false} numberOfPieces={200} gravity={0.1} />
       )}
 
       <AnimatePresence mode="wait">
         {step === 'form' ? (
-          <motion.div
-            key="form"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="space-y-8"
-          >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="lg:col-span-2 space-y-8"
+            >
             <div className="text-center mb-12">
               <h1 className={cn("text-4xl font-black mb-4", isDark ? "text-white" : "text-slate-900")}>{t.predictorTitle}</h1>
               <p className={isDark ? "text-slate-400" : "text-slate-500"}>{t.predictorSub}</p>
@@ -653,7 +660,68 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
               </div>
             </div>
           </motion.div>
-        ) : (
+
+          {/* Sidebar */}
+          <aside className="space-y-8">
+            <div className={cn(
+              "p-8 rounded-[2.5rem] border",
+              isDark ? "bg-navy-900 border-white/10" : "bg-white border-slate-200 shadow-sm"
+            )}>
+              <h3 className={cn("text-xl font-bold mb-6 flex items-center gap-2", isDark ? "text-white" : "text-slate-900")}>
+                <TrendingUp className="text-emerald-500" /> Latest IPO Articles
+              </h3>
+              <div className="space-y-6">
+                {ARTICLES.slice(0, 5).map((article, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setCurrentSlug(article.slug);
+                      setCurrentPage('blog-post');
+                    }}
+                    className="group text-left block w-full"
+                  >
+                    <h4 className={cn(
+                      "font-bold text-sm mb-1 group-hover:text-emerald-500 transition-colors line-clamp-2",
+                      isDark ? "text-slate-200" : "text-slate-800"
+                    )}>
+                      {article.title}
+                    </h4>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                      <span>{article.date}</span>
+                      <span>•</span>
+                      <span className="text-emerald-500">Read More</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setCurrentPage('blog')}
+                className="w-full mt-8 py-3 rounded-xl border border-emerald-500/30 text-emerald-500 font-bold text-sm hover:bg-emerald-500/10 transition-all"
+              >
+                View All Articles
+              </button>
+            </div>
+
+            <div className={cn(
+              "p-8 rounded-[2.5rem] border bg-gradient-to-br from-indigo-600 to-purple-700 text-white",
+              "border-white/10 shadow-xl shadow-indigo-500/20"
+            )}>
+              <h3 className="text-xl font-bold mb-4">Join Our Community</h3>
+              <p className="text-indigo-100 text-sm mb-6 leading-relaxed">
+                Get real-time IPO updates, allotment results, and stock market tips directly on your phone.
+              </p>
+              <a 
+                href="https://wa.me/917080460057"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 bg-white text-indigo-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-indigo-50 transition-all"
+              >
+                Join WhatsApp Group
+              </a>
+            </div>
+          </aside>
+        </div>
+      ) : (
           <motion.div
             key="result"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -721,9 +789,16 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
                 <div className="flex flex-col items-center gap-4 pt-6 no-download">
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
                     <button 
+                      onClick={handleFacebookShare}
+                      className="w-full sm:w-auto px-8 py-5 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-500/20"
+                    >
+                      <Facebook className="w-5 h-5" />
+                      Share on Facebook
+                    </button>
+                    <button 
                       onClick={handleShare}
                       disabled={isSharing}
-                      className="btn-gold w-full sm:w-auto px-10 py-5 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-gold w-full sm:w-auto px-8 py-5 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
                       {isSharing ? (lang === 'EN' ? 'Processing...' : 'प्रक्रिया हुँदैछ...') : t.shareResult}
@@ -732,7 +807,7 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
                       onClick={handleDownload}
                       disabled={isDownloading}
                       className={cn(
-                        "w-full sm:w-auto px-10 py-5 rounded-2xl font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "w-full sm:w-auto px-8 py-5 rounded-2xl font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed",
                         isDark ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-900"
                       )}
                     >
@@ -755,8 +830,6 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage })
                 </div>
               </div>
             </div>
-
-            <AdsterraNativeBanner />
 
             <div className="bg-gold-500/5 border border-gold-500/20 p-8 rounded-[2.5rem] flex items-start gap-6">
               <div className="w-12 h-12 bg-gold-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">

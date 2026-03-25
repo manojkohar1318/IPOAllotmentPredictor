@@ -108,6 +108,28 @@ export const AboutSection = ({ lang, isDark }) => {
           </motion.div>
         </section>
 
+      {/* Author Section */}
+      <section className="max-w-4xl mx-auto">
+        <div className={cn(
+          "p-10 rounded-[3rem] border flex flex-col md:flex-row items-center gap-10",
+          isDark ? "bg-navy-900 border-white/10" : "bg-white border-slate-200 shadow-sm"
+        )}>
+          <div className="w-32 h-32 rounded-full bg-emerald-500 flex items-center justify-center text-white text-5xl font-black shrink-0 shadow-xl shadow-emerald-500/20">
+            MK
+          </div>
+          <div className="space-y-4">
+            <h2 className={cn("text-3xl font-black", isDark ? "text-white" : "text-slate-900")}>About the Author</h2>
+            <p className={cn("text-lg leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
+              <strong>Manoj Kohar</strong> is a financial analyst and tech enthusiast based in Nepal. With over 5 years of experience in the Nepal Stock Exchange (NEPSE), Manoj has helped thousands of retail investors navigate the complexities of IPOs and secondary market trading. His mission is to simplify financial data and empower the common investor through technology.
+            </p>
+            <div className="flex gap-4">
+              <a href="#" className="text-emerald-500 font-bold hover:underline">LinkedIn</a>
+              <a href="#" className="text-emerald-500 font-bold hover:underline">Twitter</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Values Section */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[

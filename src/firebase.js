@@ -6,6 +6,8 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, 
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase
+console.log("Initializing Firebase with Project ID:", firebaseConfig.projectId);
+console.log("Auth Domain:", firebaseConfig.authDomain);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const firestore = getFirestore(app, firebaseConfig.firestoreDatabaseId);

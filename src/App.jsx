@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -31,9 +32,10 @@ import { TermsOfService } from './components/TermsOfService';
 import { DisclaimerPage } from './components/DisclaimerPage';
 import { ContactPage } from './components/ContactPage';
 import { OversubscriptionChecker } from './components/OversubscriptionChecker';
-import { IpoResultChecker } from './components/IpoResultChecker';
 import { AuthModal } from './components/AuthModal';
-import { AdsterraNativeBanner } from './components/AdsterraNativeBanner';
+import { BlogListing } from './components/BlogListing';
+import { BlogPost } from './components/BlogPost';
+import { BlogSection } from './components/BlogSection';
 import { cn } from './cn';
 import { DUMMY_IPOS } from './constants';
 import { 
@@ -46,6 +48,19 @@ import {
   handleFirestoreError,
   OperationType 
 } from './firebase';
+
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "NEPSE IPO Allotment Predictor",
+  "url": "https://ipoallotmentpredictor.vercel.app",
+  "description": "Nepal's smartest IPO allotment probability predictor at one click. Get data-driven insights for NEPSE IPOs.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://ipoallotmentpredictor.vercel.app/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -119,6 +134,7 @@ class ErrorBoundary extends React.Component {
 function AppContent() {
   const [lang, setLang] = useState('EN');
   const [currentPage, setCurrentPage] = useState('home');
+  const [currentSlug, setCurrentSlug] = useState(null);
   const [isDark, setIsDark] = useState(true);
   const [ipos, setIpos] = useState(DUMMY_IPOS);
   const [liveOversubscription, setLiveOversubscription] = useState([]);
@@ -276,7 +292,7 @@ function AppContent() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'predictor': return <Predictor lang={lang} ipos={ipos} liveIpos={liveOversubscription} isDark={isDark} setCurrentPage={setCurrentPage} />;
+      case 'predictor': return <Predictor lang={lang} ipos={ipos} liveIpos={liveOversubscription} isDark={isDark} setCurrentPage={setCurrentPage} setCurrentSlug={setCurrentSlug} />;
       case 'education': return <EducationSection lang={lang} isDark={isDark} />;
       case 'about': return <AboutSection lang={lang} isDark={isDark} />;
       case 'admin': return <AdminDashboard lang={lang} ipos={ipos} setIpos={setIpos} countdownData={countdownData} setCountdownData={setCountdownData} isDark={isDark} liveOversubscription={liveOversubscription} />;
@@ -285,13 +301,17 @@ function AppContent() {
       case 'disclaimer': return <DisclaimerPage lang={lang} isDark={isDark} />;
       case 'contact': return <ContactPage lang={lang} isDark={isDark} />;
       case 'oversubscription': return <OversubscriptionChecker lang={lang} isDark={isDark} />;
-      case 'ipo-result': return <IpoResultChecker lang={lang} isDark={isDark} setCurrentPage={setCurrentPage} />;
+      case 'blog': return <BlogListing isDark={isDark} setCurrentPage={setCurrentPage} setCurrentSlug={setCurrentSlug} />;
+      case 'blog-post': return <BlogPost isDark={isDark} slug={currentSlug} setCurrentPage={setCurrentPage} setCurrentSlug={setCurrentSlug} />;
       default: return renderHome();
     }
   };
 
   const renderHome = () => (
     <div className="space-y-24 pb-24">
+      <script type="application/ld+json">
+        {JSON.stringify(JSON_LD)}
+      </script>
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4 overflow-hidden">
         {/* Abstract Background Elements */}
@@ -310,13 +330,13 @@ function AppContent() {
               "text-5xl md:text-7xl font-black mb-6 leading-tight",
               isDark ? "text-white" : "text-slate-900"
             )}>
-              {t.heroTitle}
+              NEPSE IPO Allotment Predictor
             </h1>
             <p className={cn(
               "text-xl md:text-2xl mb-10 max-w-3xl mx-auto",
               isDark ? "text-slate-400" : "text-slate-600"
             )}>
-              {t.heroSub}
+              Nepal's smartest IPO allotment probability predictor at one click. Get data-driven insights for NEPSE IPOs including Hydropower, Microfinance, and more.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button 
@@ -324,15 +344,6 @@ function AppContent() {
                 className="btn-gold text-lg px-10 py-5 flex items-center justify-center gap-3 group w-full sm:w-72"
               >
                 {t.checkChances} <Sparkles className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              </button>
-              <button 
-                onClick={() => setCurrentPage('ipo-result')}
-                className={cn(
-                  "px-10 py-5 rounded-xl font-bold border transition-all flex items-center justify-center gap-3 w-full sm:w-72",
-                  isDark ? "bg-emerald-600/20 border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 text-emerald-600"
-                )}
-              >
-                <Search className="w-6 h-6" /> Check IPO Result
               </button>
               <button 
                 onClick={() => setCurrentPage('oversubscription')}
@@ -385,8 +396,6 @@ function AppContent() {
         </div>
       </section>
 
-      <AdsterraNativeBanner />
-      
       {/* Oversubscription Section */}
       <section className="max-w-7xl mx-auto px-4">
         <div className={cn(
@@ -586,6 +595,8 @@ function AppContent() {
         </div>
       </section>
 
+      <BlogSection isDark={isDark} setCurrentPage={setCurrentPage} setCurrentSlug={setCurrentSlug} />
+
       {/* FAQ Section */}
       <section className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-16">
@@ -608,6 +619,22 @@ function AppContent() {
             {
               q: "What is the 'Skip Value' in allotment?",
               a: "The skip value is a number used in the systematic selection process to ensure randomization. It determines the interval at which applicants are selected from the sorted list after a random starting point is chosen."
+            },
+            {
+              q: "How can I check my IPO result in Nepal?",
+              a: "You can check your IPO result through the official CDSC IPO Result portal (iporesult.cdsc.com.np) by entering your 16-digit BOID and selecting the company."
+            },
+            {
+              q: "What is the minimum number of units to apply for an IPO in Nepal?",
+              a: "The minimum application is usually for 10 units, which costs NPR 1,000 for most IPOs (priced at NPR 100 per share)."
+            },
+            {
+              q: "How long does it take for an IPO to be listed on NEPSE?",
+              a: "Typically, it takes 10-15 days after the allotment for the shares to be listed and become tradable on the Nepal Stock Exchange (NEPSE)."
+            },
+            {
+              q: "What is the difference between IPO and FPO?",
+              a: "An IPO (Initial Public Offering) is the first time a company offers its shares to the public, while an FPO (Further Public Offering) is an additional issuance of shares by a company that is already listed on the stock exchange."
             }
           ].map((faq, i) => (
             <div key={i} className={cn(
@@ -618,6 +645,39 @@ function AppContent() {
               <p className={isDark ? "text-slate-400" : "text-slate-600"}>{faq.a}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* How to Use This Tool */}
+      <section className="max-w-4xl mx-auto px-4 py-20">
+        <div className={cn("p-10 rounded-[3rem] border", isDark ? "bg-navy-900 border-white/10" : "bg-white border-slate-200 shadow-sm")}>
+          <h2 className={cn("text-3xl font-black mb-8", isDark ? "text-white" : "text-slate-900")}>How to Use the NEPSE IPO Allotment Predictor</h2>
+          <div className={cn("space-y-6 text-lg leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
+            <p>
+              Using our NEPSE IPO Allotment Predictor is simple and designed to give you instant insights into your investment chances. To get started, navigate to the "Predictor" section from the menu. First, select the company you are interested in from the dropdown list. If the company is currently open for application or recently closed, our system will automatically fetch the latest oversubscription data if available.
+            </p>
+            <p>
+              Next, enter the number of Demat accounts you are using to apply for the IPO. Many families in Nepal apply through multiple accounts (e.g., self, spouse, children) to increase their collective probability. Our tool calculates the combined probability for all these accounts. After entering the details, click on the "Predict Now" button.
+            </p>
+            <p>
+              The algorithm will then process the data, comparing the total issued units against the estimated or actual number of applicants. You will receive a probability score (Low, Moderate, Good, or High) along with a fun comment and a prediction of how many units (kitta) you might receive. You can also download your prediction card or share it on Facebook to compare with your friends. Remember, this tool is for educational purposes and helps you understand the statistical side of the NEPSE lottery system.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How IPO Allotment Works in Nepal */}
+      <section className="max-w-4xl mx-auto px-4 py-20">
+        <div className={cn("p-10 rounded-[3rem] border", isDark ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50 border-emerald-100")}>
+          <h2 className={cn("text-3xl font-black mb-8", isDark ? "text-white" : "text-slate-900")}>How IPO Allotment Works in Nepal</h2>
+          <div className={cn("space-y-6 text-lg leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
+            <p>
+              In Nepal, the IPO allotment process is governed by the Securities Board of Nepal (SEBON) and executed by the Issue Manager through the C-ASBA system. For most retail IPOs, the "10 Kitta Policy" is followed. This means that every valid applicant is eligible to receive at least 10 shares if the issue is not heavily oversubscribed.
+            </p>
+            <p>
+              However, due to the massive number of investors (often over 2.5 million for a single issue), most IPOs become oversubscribed by many times. In such cases, a lottery system is used. The system randomly selects lucky winners who each receive 10 shares. The probability of being selected depends entirely on the ratio of available shares to the number of valid applicants. Our predictor tool uses this exact logic to give you a statistical estimate of your chances.
+            </p>
+          </div>
         </div>
       </section>
     </div>
@@ -684,8 +744,15 @@ export default function App() {
   }, []);
 
   return (
-    <ErrorBoundary isDark={isDark}>
-      <AppContent />
-    </ErrorBoundary>
+    <HelmetProvider>
+      <Helmet>
+        <title>NEPSE IPO Allotment Predictor | Check Your IPO Probability</title>
+        <meta name="description" content="The best IPO allotment predictor in Nepal. Check your IPO allotment probability for NEPSE stocks including Hydropower, Microfinance, and more. Get real-time data-driven insights." />
+        <meta name="keywords" content="NEPSE IPO Allotment Predictor, ipo allotment predictor nepal, nepse ipo result, ipo allotment probability, nepse stock market nepal, share market nepal, ipo result checker nepal" />
+      </Helmet>
+      <ErrorBoundary isDark={isDark}>
+        <AppContent />
+      </ErrorBoundary>
+    </HelmetProvider>
   );
 }

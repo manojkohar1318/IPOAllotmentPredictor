@@ -60,7 +60,7 @@ export const AuthModal = ({ isOpen, onClose, isDark, onAuthSuccess }) => {
       }
       await handleAuthSuccess(userCredential.user);
     } catch (err) {
-      console.error('Auth error:', err);
+      console.error('Auth error:', err.code, err.message);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -74,7 +74,7 @@ export const AuthModal = ({ isOpen, onClose, isDark, onAuthSuccess }) => {
       const result = await signInWithPopup(auth, googleProvider);
       await handleAuthSuccess(result.user);
     } catch (err) {
-      console.error('Google sign-in error:', err);
+      console.error('Google sign-in error:', err.code, err.message);
       // Handle the case where the user closes the popup
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Sign-in cancelled. Please complete the process in the popup.');

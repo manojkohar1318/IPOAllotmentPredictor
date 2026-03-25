@@ -9,7 +9,7 @@ export const DisclaimerPage = ({ lang, isDark }) => {
     <div className="max-w-4xl mx-auto px-4 py-20 space-y-12">
       <div className="text-center space-y-4">
         <h1 className={cn("text-4xl md:text-5xl font-black", isDark ? "text-white" : "text-slate-900")}>{t.disclaimerPage}</h1>
-        <p className={isDark ? "text-slate-400" : "text-slate-500"}>Last Updated: March 2024</p>
+        <p className={isDark ? "text-slate-400" : "text-slate-500"}>Last Updated: March 24, 2026</p>
       </div>
 
       <div className={cn(
@@ -21,34 +21,33 @@ export const DisclaimerPage = ({ lang, isDark }) => {
           isDark ? "bg-gold-500/10 border-gold-500/20 shadow-gold-900/10" : "bg-gold-50 border-gold-200 shadow-gold-200/50"
         )}>
           <p className="text-gold-500 font-bold text-xl leading-relaxed italic text-center">
-            "{t.disclaimer}"
+            "The information provided on NEPSE IPO Allotment Predictor is for educational and informational purposes only. It should not be considered as financial or investment advice."
           </p>
         </div>
 
         <section className="space-y-4">
-          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>1. General Information</h2>
-          <p>The information provided by <a href="https://ipo-allotment-predictor.vercel.app" className="text-emerald-500 hover:underline">IPO Predictor Nepal</a> is for general informational and educational purposes only. All information on the site is provided in good faith, however we make no representation or warranty of any kind, express or implied, regarding the accuracy, adequacy, validity, reliability, availability, or completeness of any information on the site.</p>
+          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>1. No Financial Advice</h2>
+          <p>We are not licensed financial advisors, and the content on this website does not constitute financial, investment, or legal advice. You should consult with a qualified professional before making any investment decisions in the Nepal Stock Market or any other financial market.</p>
         </section>
 
         <section className="space-y-4">
-          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>2. Not Financial Advice</h2>
-          <p>The site cannot and does not contain financial advice. The financial information is provided for general informational and educational purposes only and is not a substitute for professional advice. Accordingly, before taking any actions based upon such information, we encourage you to consult with the appropriate professionals. We do not provide any kind of financial advice. The use or reliance of any information contained on this site is solely at your own risk.</p>
+          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>2. Accuracy of Predictions</h2>
+          <p>Our IPO Allotment Predictor uses statistical models based on historical data and real-time subscription rates. These are <strong>estimates only</strong> and do not guarantee any specific outcome. The actual allotment is conducted by the Issue Manager and CDSC using a randomized lottery system. We are not responsible for any discrepancies between our predictions and the official results.</p>
         </section>
 
         <section className="space-y-4">
           <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>3. External Links Disclaimer</h2>
-          <p>The site may contain (or you may be sent through the site) links to other websites or content belonging to or originating from third parties or links to websites and features in banners or other advertising. Such external links are not investigated, monitored, or checked for accuracy, adequacy, validity, reliability, availability, or completeness by us.</p>
-          <p>We do not warrant, endorse, guarantee, or assume responsibility for the accuracy or reliability of any information offered by third-party websites linked through the site or any website or feature linked in any banner or other advertising. We will not be a party to or in any way be responsible for monitoring any transaction between you and third-party providers of products or services.</p>
+          <p>Our website may contain links to external websites that are not provided or maintained by or in any way affiliated with us. Please note that we do not guarantee the accuracy, relevance, timeliness, or completeness of any information on these external websites.</p>
         </section>
 
         <section className="space-y-4">
-          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>4. Professional Disclaimer</h2>
-          <p>The site cannot and does not contain investment advice. Our authors are not licensed financial advisors. The information is provided for general informational and educational purposes only and is not a substitute for professional advice. Accordingly, before taking any actions based upon such information, we encourage you to consult with the appropriate professionals.</p>
+          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>4. Limitation of Liability</h2>
+          <p>In no event shall NEPSE IPO Allotment Predictor be liable for any special, direct, indirect, consequential, or incidental damages or any damages whatsoever, whether in an action of contract, negligence or other tort, arising out of or in connection with the use of the Service or the contents of the Service.</p>
         </section>
 
         <section className="space-y-4">
-          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>5. Errors and Omissions Disclaimer</h2>
-          <p>While we have made every attempt to ensure that the information contained in this site has been obtained from reliable sources, IPO Predictor Nepal is not responsible for any errors or omissions, or for the results obtained from the use of this information. All information in this site is provided "as is", with no guarantee of completeness, accuracy, timeliness or of the results obtained from the use of this information, and without warranty of any kind, express or implied.</p>
+          <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>5. "Use at Your Own Risk"</h2>
+          <p>All information in the Service is provided "as is", with no guarantee of completeness, accuracy, timeliness or of the results obtained from the use of this information, and without warranty of any kind, express or implied, including, but not limited to warranties of performance, merchantability and fitness for a particular purpose.</p>
         </section>
       </div>
     </div>

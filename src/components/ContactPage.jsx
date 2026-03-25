@@ -103,12 +103,19 @@ export const ContactPage = ({ lang, isDark }) => {
               </div>
 
               <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <MapPin className="text-blue-500 w-6 h-6" />
+                <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center">
+                  <Globe className="text-blue-600 w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase">Location</p>
-                  <p className={cn("text-lg font-bold", isDark ? "text-white" : "text-slate-900")}>Kathmandu, Nepal</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase">Facebook Updates</p>
+                  <a 
+                    href="https://www.facebook.com/share/1BuKk986R6/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-lg font-bold text-blue-600 hover:underline"
+                  >
+                    IPO/FPO Updates Nepal
+                  </a>
                 </div>
               </div>
             </div>
@@ -118,11 +125,9 @@ export const ContactPage = ({ lang, isDark }) => {
             "p-8 rounded-[2.5rem] border bg-emerald-600/5 border-emerald-500/20",
             isDark ? "" : "bg-emerald-50"
           )}>
-            <h3 className={cn("text-xl font-bold mb-4", isDark ? "text-white" : "text-slate-900")}>Business Hours</h3>
+            <h3 className={cn("text-xl font-bold mb-4", isDark ? "text-white" : "text-slate-900")}>Response Time</h3>
             <p className={isDark ? "text-slate-400" : "text-slate-600"}>
-              Monday - Friday: 10:00 AM - 6:00 PM (NPT)<br />
-              Saturday: 11:00 AM - 4:00 PM (NPT)<br />
-              Sunday: Closed
+              We strive to respond to all inquiries within 24-48 hours during business days. For urgent matters, please reach out via our Facebook page.
             </p>
           </div>
         </div>

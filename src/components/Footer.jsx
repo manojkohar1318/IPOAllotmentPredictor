@@ -66,19 +66,39 @@ export const Footer = ({ lang, setCurrentPage, isDark }) => {
           <div>
             <h4 className={cn("text-lg font-bold mb-6", isDark ? "text-white" : "text-slate-900")}>Quick Links</h4>
             <ul className="space-y-4">
-              {['home', 'predictor', 'oversubscription', 'education', 'about'].map((id) => (
-                <li key={id}>
+              {[
+                { id: 'about', label: 'About' },
+                { id: 'contact', label: 'Contact' },
+                { id: 'privacy', label: 'Privacy Policy' },
+                { id: 'disclaimer', label: 'Disclaimer' },
+                { id: 'terms', label: 'Terms' },
+                { id: 'blog', label: 'Blog' }
+              ].map((link) => (
+                <li key={link.id}>
                   <button 
-                    onClick={() => setCurrentPage(id)}
+                    onClick={() => setCurrentPage(link.id)}
                     className={cn(
                       "transition-colors capitalize",
                       isDark ? "text-slate-400 hover:text-emerald-400" : "text-slate-600 hover:text-emerald-600"
                     )}
                   >
-                    {t[id] || (id === 'oversubscription' ? t.oversubscriptionChecker : id)}
+                    {link.label}
                   </button>
                 </li>
               ))}
+              <li>
+                <a 
+                  href="https://www.facebook.com/share/1BuKk986R6/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "transition-colors",
+                    isDark ? "text-slate-400 hover:text-emerald-400" : "text-slate-600 hover:text-emerald-600"
+                  )}
+                >
+                  Facebook (IPO/FPO Updates Nepal)
+                </a>
+              </li>
             </ul>
           </div>
 
