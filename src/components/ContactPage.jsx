@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import emailjs from '@emailjs/browser';
@@ -6,7 +8,8 @@ import {
   MessageCircle, 
   CheckCircle2,
   MapPin,
-  Phone
+  Phone,
+  Globe
 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { cn } from '../cn';
@@ -92,12 +95,12 @@ export const ContactPage = ({ lang, isDark }) => {
                 <div>
                   <p className="text-xs font-bold text-slate-500 uppercase">WhatsApp Support</p>
                   <a 
-                    href="https://wa.me/917080460057" 
+                    href="https://wa.me/9779804486318" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-lg font-bold text-emerald-500 hover:underline"
                   >
-                    +91 7080460057
+                    +977 9804486318
                   </a>
                 </div>
               </div>

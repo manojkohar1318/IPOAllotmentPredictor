@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, User, ArrowRight, BookOpen } from 'lucide-react';
@@ -7,6 +9,10 @@ import { cn } from '../cn';
 export const BlogListing = ({ isDark, setCurrentPage, setCurrentSlug }) => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      <Helmet>
+        <title>Latest IPO Insights & Guides | NEPSE IPO Allotment Predictor</title>
+        <meta name="description" content="Read the latest articles, guides, and expert analysis on the Nepal Stock Market and IPOs. Stay updated with NEPSE trends." />
+      </Helmet>
       <div className="text-center mb-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -48,6 +54,7 @@ export const BlogListing = ({ isDark, setCurrentPage, setCurrentSlug }) => {
                 alt={article.title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 referrerPolicy="no-referrer"
+                onError={(e) => { e.target.src = `https://placehold.co/800x450?text=${encodeURIComponent(article.title)}`; }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>

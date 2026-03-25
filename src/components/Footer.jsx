@@ -112,7 +112,7 @@ export const Footer = ({ lang, setCurrentPage, isDark }) => {
               </li>
               <li>
                 <a 
-                  href="https://wa.me/917080460057" 
+                  href="https://wa.me/9779804486318" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform"

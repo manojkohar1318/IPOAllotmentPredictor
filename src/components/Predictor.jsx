@@ -711,7 +711,7 @@ export const Predictor = ({ lang, ipos, liveIpos = [], isDark, setCurrentPage, s
                 Get real-time IPO updates, allotment results, and stock market tips directly on your phone.
               </p>
               <a 
-                href="https://wa.me/917080460057"
+                href="https://wa.me/9779804486318"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4 bg-white text-indigo-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-indigo-50 transition-all"

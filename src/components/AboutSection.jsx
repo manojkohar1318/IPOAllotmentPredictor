@@ -1,9 +1,10 @@
+"use client";
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import emailjs from '@emailjs/browser';
 import { 
   Target, 
-  Globe, 
   ShieldCheck, 
   Mail, 
   MessageCircle,
@@ -199,7 +200,7 @@ export const AboutSection = ({ lang, isDark }) => {
               <div>
                 <p className="text-xs font-bold text-slate-500 uppercase">Direct Support</p>
                 <a 
-                  href="https://wa.me/917080460057" 
+                  href="https://wa.me/9779804486318" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform mt-2"

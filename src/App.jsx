@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -722,7 +724,7 @@ function AppContent() {
       {/* Floating Buttons */}
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40">
         <a 
-          href="https://wa.me/917080460057" 
+          href="https://wa.me/9779804486318" 
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
@@ -747,8 +749,10 @@ export default function App() {
     <HelmetProvider>
       <Helmet>
         <title>NEPSE IPO Allotment Predictor | Check Your IPO Probability</title>
-        <meta name="description" content="The best IPO allotment predictor in Nepal. Check your IPO allotment probability for NEPSE stocks including Hydropower, Microfinance, and more. Get real-time data-driven insights." />
+        <meta name="description" content="Predict your IPO allotment chances with high accuracy using our NEPSE IPO Allotment Predictor. Get live subscription data, expert insights, and market analysis." />
         <meta name="keywords" content="NEPSE IPO Allotment Predictor, ipo allotment predictor nepal, nepse ipo result, ipo allotment probability, nepse stock market nepal, share market nepal, ipo result checker nepal" />
+        <meta name="author" content="NEPSE IPO Predictor Team" />
+        <link rel="canonical" href="https://ipoallotmentpredictor.vercel.app" />
       </Helmet>
       <ErrorBoundary isDark={isDark}>
         <AppContent />

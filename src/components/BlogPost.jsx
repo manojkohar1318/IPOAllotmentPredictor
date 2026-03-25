@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
@@ -126,6 +128,7 @@ export const BlogPost = ({ isDark, slug, setCurrentPage, setCurrentSlug }) => {
                 alt={article.title}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
+                onError={(e) => { e.target.src = `https://placehold.co/1200x630?text=${encodeURIComponent(article.title)}`; }}
               />
             </div>
 
@@ -223,6 +226,7 @@ export const BlogPost = ({ isDark, slug, setCurrentPage, setCurrentSlug }) => {
                         alt={rel.title}
                         className="w-full h-full object-cover transition-transform group-hover:scale-110"
                         referrerPolicy="no-referrer"
+                        onError={(e) => { e.target.src = `https://placehold.co/800x450?text=${encodeURIComponent(rel.title)}`; }}
                       />
                     </div>
                     <div>

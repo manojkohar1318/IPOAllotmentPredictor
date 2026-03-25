@@ -109,7 +109,11 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
   const showDropdown = !selectedCompany && (searchTerm || companies.length > 0);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
+    <div className={cn(
+      "min-h-screen transition-colors duration-300",
+      isDark ? "bg-gray-900" : "bg-gray-50"
+    )}>
+      <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -128,7 +132,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
                   </h2>
                   <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-[8px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
+                    <span className="text-[8px] md:text-[10px] font-black text-white uppercase tracking-widest">Live</span>
                   </div>
                 </div>
                 <p className="text-xs md:text-base text-slate-500 dark:text-slate-400 font-medium">
@@ -152,7 +156,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
           <div className="space-y-6 md:space-y-10">
             {/* IPO Selection Dropdown */}
             <div className="space-y-3 md:space-y-4">
-              <label className="block text-[10px] md:text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] ml-2">
+              <label className={cn("block text-[10px] md:text-xs font-black uppercase tracking-[0.2em] ml-2", isDark ? "text-gray-200" : "text-gray-700")}>
                 {t.selectCompany || 'Select IPO'}
               </label>
               <div className="relative group">
@@ -224,7 +228,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
                     <h3 className={cn("text-xl md:text-5xl font-black mb-2 md:mb-4", isDark ? "text-white" : "text-slate-900")}>
                       {selectedCompany?.name}
                     </h3>
-                    <p className="text-[10px] md:text-sm text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] md:tracking-[0.3em] font-black mb-6 md:mb-10">
+                    <p className={cn("text-[10px] md:text-sm uppercase tracking-[0.2em] md:tracking-[0.3em] font-black mb-6 md:mb-10", isDark ? "text-gray-300" : "text-gray-600")}>
                       Oversubscription Analysis
                     </p>
                     
@@ -253,14 +257,14 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
                       "p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border transition-all hover:scale-[1.02]",
                       isDark ? "bg-navy-900/50 border-white/5" : "bg-white border-slate-100 shadow-sm"
                     )}>
-                      <p className="text-[8px] md:text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mb-1 md:mb-3">Total Issued Units</p>
+                      <p className={cn("text-[8px] md:text-[10px] uppercase font-black tracking-widest mb-1 md:mb-3", isDark ? "text-gray-200" : "text-gray-700")}>Total Issued Units</p>
                       <p className="text-lg md:text-3xl font-black text-slate-900 dark:text-white">{result.issued}</p>
                     </div>
                     <div className={cn(
                       "p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border transition-all hover:scale-[1.02]",
                       isDark ? "bg-navy-900/50 border-white/5" : "bg-white border-slate-100 shadow-sm"
                     )}>
-                      <p className="text-[8px] md:text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mb-1 md:mb-3">Total Applied Units</p>
+                      <p className={cn("text-[8px] md:text-[10px] uppercase font-black tracking-widest mb-1 md:mb-3", isDark ? "text-gray-200" : "text-gray-700")}>Total Applied Units</p>
                       <p className="text-lg md:text-3xl font-black text-slate-900 dark:text-white">{result.applied}</p>
                     </div>
                   </div>
@@ -275,6 +279,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
           </div>
         </div>
       </motion.div>
+      </div>
     </div>
   );
 };
