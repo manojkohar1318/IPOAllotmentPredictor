@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, addDoc, deleteDoc, onSnapshot, getDocs, query, where, orderBy, limit, increment, getDocFromServer } from "firebase/firestore";
+import { initializeFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, addDoc, deleteDoc, onSnapshot, getDocs, query, where, orderBy, limit, increment, getDocFromServer } from "firebase/firestore";
 
 // Import the Firebase configuration
 import firebaseConfig from '../firebase-applet-config.json';
@@ -10,7 +10,9 @@ console.log("Initializing Firebase with Project ID:", firebaseConfig.projectId);
 console.log("Auth Domain:", firebaseConfig.authDomain);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const firestore = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const firestore = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
 
 // Test Firestore connection
 async function testConnection() {
