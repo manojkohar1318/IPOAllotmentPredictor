@@ -1,66 +1,68 @@
 import React from 'react';
+import BlogImage from './BlogImage';
+import Link from 'next/link';
 import { ARTICLES } from '../lib/articles';
-import { cn } from '../cn';
 
-export const BlogSection = ({ isDark, setCurrentPage, setCurrentSlug }) => {
-  // Show only the latest 3 articles on the homepage
-  const latestArticles = ARTICLES.slice(0, 3);
+export const BlogSection = () => {
+  // Show only the latest 6 articles on the homepage
+  const latestArticles = ARTICLES.slice(0, 6);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-20">
-      <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
-        <div className="text-left">
-          <h2 className={cn("text-4xl md:text-5xl font-black mb-4", isDark ? "text-white" : "text-slate-900")}>
-            Latest <span className="text-emerald-500">Insights</span>
+    <section className="py-20 bg-gray-50 dark:bg-gray-900/50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Latest IPO Insights & Market Guides
           </h2>
-          <p className={cn("text-lg max-w-xl", isDark ? "text-slate-400" : "text-slate-500")}>
-            Stay informed with the latest news, guides, and expert analysis on the Nepal Stock Market and IPOs.
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Stay informed with expert analysis, guides, and real-time updates on the Nepal Stock Market.
           </p>
         </div>
-        <button 
-          onClick={() => setCurrentPage('blog')}
-          className="px-8 py-4 rounded-2xl bg-emerald-500/10 text-emerald-500 font-bold hover:bg-emerald-500 hover:text-white transition-all whitespace-nowrap"
-        >
-          View All Articles
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {latestArticles.map((post) => (
-          <div 
-            key={post.slug} 
-            onClick={() => {
-              setCurrentSlug(post.slug);
-              setCurrentPage('blog-post');
-            }}
-            className={cn(
-              "group rounded-[2rem] border overflow-hidden transition-all duration-500 hover:scale-[1.02] cursor-pointer",
-              isDark ? "bg-navy-900 border-white/10 hover:border-emerald-500/50" : "bg-white border-slate-200 shadow-sm hover:shadow-xl"
-            )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {latestArticles.map((post) => (
+            <div 
+              key={post.slug} 
+              className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group"
+            >
+              <div className="relative h-48 w-full overflow-hidden">
+                <BlogImage 
+                  src={post.coverImage} 
+                  alt={post.title} 
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+              </div>
+              <div className="p-6 flex flex-col flex-grow">
+                <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-2">
+                  {post.date}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 leading-tight group-hover:text-green-500 transition-colors">
+                  {post.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 flex-grow">
+                  {post.excerpt}
+                </p>
+                <Link 
+                  href={`/blog/${post.slug}`}
+                  className="text-green-500 font-bold text-sm flex items-center gap-1 hover:gap-2 transition-all"
+                >
+                  Read More <span>→</span>
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Link 
+            href="/blog"
+            className="inline-flex items-center px-8 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all shadow-lg shadow-green-500/25"
           >
-            <div className="relative h-56 overflow-hidden">
-              <img 
-                src={post.coverImage} 
-                alt={post.title} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                referrerPolicy="no-referrer"
-                onError={(e) => { e.target.src = `https://placehold.co/800x450?text=${encodeURIComponent(post.title)}`; }}
-              />
-            </div>
-            <div className="p-8 space-y-4">
-              <div className="text-xs font-bold text-emerald-500 uppercase tracking-widest">{post.date}</div>
-              <h3 className={cn("text-xl font-bold leading-tight group-hover:text-emerald-500 transition-colors", isDark ? "text-white" : "text-slate-900")}>
-                {post.title}
-              </h3>
-              <p className={cn("text-sm leading-relaxed line-clamp-3", isDark ? "text-slate-400" : "text-slate-600")}>
-                {post.excerpt}
-              </p>
-              <button className="text-emerald-500 font-bold text-sm flex items-center gap-2 group/btn">
-                Read More <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
-              </button>
-            </div>
-          </div>
-        ))}
+            View All Articles
+          </Link>
+        </div>
       </div>
     </section>
   );

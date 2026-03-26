@@ -1,104 +1,53 @@
 "use client";
 
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
-import { motion } from 'framer-motion';
-import { Calendar, User, ArrowRight, BookOpen } from 'lucide-react';
+import BlogImage from './BlogImage';
+import Link from 'next/link';
 import { ARTICLES } from '../lib/articles';
-import { cn } from '../cn';
 
-export const BlogListing = ({ isDark, setCurrentPage, setCurrentSlug }) => {
+export const BlogListing = () => {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <Helmet>
-        <title>Latest IPO Insights & Guides | NEPSE IPO Allotment Predictor</title>
-        <meta name="description" content="Read the latest articles, guides, and expert analysis on the Nepal Stock Market and IPOs. Stay updated with NEPSE trends." />
-      </Helmet>
-      <div className="text-center mb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-sm mb-6"
-        >
-          <BookOpen className="w-4 h-4" />
-          OUR BLOG
-        </motion.div>
-        <h1 className={cn(
-          "text-4xl md:text-6xl font-black mb-6",
-          isDark ? "text-white" : "text-slate-900"
-        )}>
-          Latest Insights & <span className="text-emerald-500">Guides</span>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-4">
+          Latest IPO Insights & Guides
         </h1>
-        <p className={cn(
-          "text-xl max-w-2xl mx-auto",
-          isDark ? "text-slate-400" : "text-slate-600"
-        )}>
-          Stay updated with the latest trends, strategies, and news from the Nepal Stock Exchange and IPO market.
+        <p className="text-center text-gray-600 dark:text-gray-400 mb-12">
+          Stay updated with the latest trends and strategies in the Nepal Stock Market.
         </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {ARTICLES.map((article, index) => (
-          <motion.div
-            key={article.slug}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className={cn(
-              "group rounded-[2rem] overflow-hidden border transition-all duration-500 hover:scale-[1.02]",
-              isDark ? "bg-navy-900 border-white/10 hover:border-emerald-500/50" : "bg-white border-slate-200 shadow-sm hover:shadow-xl"
-            )}
-          >
-            <div className="relative h-56 overflow-hidden">
-              <img 
-                src={article.coverImage} 
-                alt={article.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                referrerPolicy="no-referrer"
-                onError={(e) => { e.target.src = `https://placehold.co/800x450?text=${encodeURIComponent(article.title)}`; }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            
-            <div className="p-8">
-              <div className="flex items-center gap-4 mb-4 text-xs font-bold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {article.date}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" />
-                  {article.author}
-                </span>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {ARTICLES.map((article) => (
+            <div key={article.slug} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col group">
+              <div className="relative w-full h-48 bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                <BlogImage 
+                  src={article.coverImage} 
+                  alt={article.title}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
               </div>
-              
-              <h2 className={cn(
-                "text-xl font-bold mb-4 line-clamp-2 group-hover:text-emerald-500 transition-colors",
-                isDark ? "text-white" : "text-slate-900"
-              )}>
-                {article.title}
-              </h2>
-              
-              <p className={cn(
-                "text-sm mb-6 line-clamp-3 leading-relaxed",
-                isDark ? "text-slate-400" : "text-slate-600"
-              )}>
-                {article.excerpt}
-              </p>
-              
-              <button 
-                onClick={() => {
-                  setCurrentSlug(article.slug);
-                  setCurrentPage('blog-post');
-                }}
-                className="flex items-center gap-2 text-emerald-500 font-bold text-sm group/btn"
-              >
-                Read Full Article 
-                <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-              </button>
+              <div className="p-6 flex flex-col flex-grow">
+                <div className="text-sm text-green-500 font-semibold uppercase tracking-wide mb-2">
+                  {article.date}
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3 leading-snug group-hover:text-green-500 transition-colors">
+                  {article.title}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3 flex-grow">
+                  {article.excerpt}
+                </p>
+                <Link 
+                  href={`/blog/${article.slug}`}
+                  className="inline-flex items-center text-green-500 font-semibold hover:text-green-400 text-sm gap-1 mt-auto"
+                >
+                  Read More <span>→</span>
+                </Link>
+              </div>
             </div>
-          </motion.div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

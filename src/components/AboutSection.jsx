@@ -106,6 +106,23 @@ export const AboutSection = ({ lang, isDark }) => {
             <p className="text-lg md:text-xl text-emerald-500 font-bold">
               Thank you for visiting and exploring IPO probabilities with us!
             </p>
+            <div className="flex flex-wrap gap-4 pt-4">
+              <a 
+                href="/" 
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 text-white font-bold hover:scale-105 transition-transform"
+              >
+                Try our free IPO Allotment Predictor tool
+              </a>
+              <a 
+                href="/blog" 
+                className={cn(
+                  "inline-flex items-center gap-2 px-6 py-3 rounded-xl border font-bold hover:scale-105 transition-transform",
+                  isDark ? "border-white/10 text-white hover:bg-white/5" : "border-slate-200 text-slate-900 hover:bg-slate-50"
+                )}
+              >
+                Read our Nepal IPO guides
+              </a>
+            </div>
           </motion.div>
         </section>
 

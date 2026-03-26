@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -51,18 +50,6 @@ import {
   OperationType 
 } from './firebase';
 
-const JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "NEPSE IPO Allotment Predictor",
-  "url": "https://ipoallotmentpredictor.vercel.app",
-  "description": "Nepal's smartest IPO allotment probability predictor at one click. Get data-driven insights for NEPSE IPOs.",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": "https://ipoallotmentpredictor.vercel.app/?q={search_term_string}",
-    "query-input": "required name=search_term_string"
-  }
-};
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -311,9 +298,6 @@ function AppContent() {
 
   const renderHome = () => (
     <div className="space-y-24 pb-24">
-      <script type="application/ld+json">
-        {JSON.stringify(JSON_LD)}
-      </script>
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4 overflow-hidden">
         {/* Abstract Background Elements */}
@@ -332,13 +316,13 @@ function AppContent() {
               "text-5xl md:text-7xl font-black mb-6 leading-tight",
               isDark ? "text-white" : "text-slate-900"
             )}>
-              NEPSE IPO Allotment Predictor
+              NEPSE IPO Allotment Predictor — Check Your IPO Chances
             </h1>
             <p className={cn(
               "text-xl md:text-2xl mb-10 max-w-3xl mx-auto",
               isDark ? "text-slate-400" : "text-slate-600"
             )}>
-              Nepal's smartest IPO allotment probability predictor at one click. Get data-driven insights for NEPSE IPOs including Hydropower, Microfinance, and more.
+              Welcome to the ultimate ipo allotment predictor nepal. Our advanced oversubscription checker helps you analyze any nepse ipo using data from mero share to calculate your exact allotment probability instantly.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button 
@@ -414,7 +398,7 @@ function AppContent() {
               </div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className={cn("text-4xl font-black leading-tight", isDark ? "text-white" : "text-slate-900")}>
-                  {t.oversubscriptionChecker}
+                  IPO Oversubscription Checker — Live NEPSE Data
                 </h2>
                 <button 
                   onClick={fetchLiveOversubscription}
@@ -559,50 +543,14 @@ function AppContent() {
         </section>
       )}
 
-      {/* Market Insights Section */}
-      <section className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className={cn("text-4xl font-black mb-4", isDark ? "text-white" : "text-slate-900")}>Market Insights</h2>
-          <p className={isDark ? "text-slate-400" : "text-slate-500"}>Stay ahead with the latest trends in the Nepal Stock Market.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className={cn(
-            "p-8 rounded-[2.5rem] border",
-            isDark ? "glass border-white/10" : "bg-white border-slate-200 shadow-sm"
-          )}>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                <TrendingUp className="text-blue-500 w-6 h-6" />
-              </div>
-              <h3 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>Rising Retail Participation</h3>
-            </div>
-            <p className={cn("leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
-              The number of Demat accounts in Nepal has crossed 6 million, showing a massive surge in retail interest. This high participation means IPOs are often oversubscribed by 10x to 50x, making the lottery system the primary method of allotment.
-            </p>
-          </div>
-          <div className={cn(
-            "p-8 rounded-[2.5rem] border",
-            isDark ? "glass border-white/10" : "bg-white border-slate-200 shadow-sm"
-          )}>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                <Star className="text-purple-500 w-6 h-6" />
-              </div>
-              <h3 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>Sector Performance</h3>
-            </div>
-            <p className={cn("leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
-              Hydropower and Commercial Banks continue to dominate the IPO landscape. While Hydropower companies often offer quicker listing gains, Banking sector IPOs are preferred for long-term stability and consistent dividend payouts.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <BlogSection isDark={isDark} setCurrentPage={setCurrentPage} setCurrentSlug={setCurrentSlug} />
 
       {/* FAQ Section */}
       <section className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className={cn("text-4xl font-black mb-4", isDark ? "text-white" : "text-slate-900")}>Frequently Asked Questions</h2>
+          <h2 className={cn("text-4xl font-black mb-4", isDark ? "text-white" : "text-slate-900")}>
+            Frequently Asked Questions About IPO Allotment in Nepal
+          </h2>
         </div>
         <div className="space-y-4">
           {[
@@ -650,38 +598,6 @@ function AppContent() {
         </div>
       </section>
 
-      {/* How to Use This Tool */}
-      <section className="max-w-4xl mx-auto px-4 py-20">
-        <div className={cn("p-10 rounded-[3rem] border", isDark ? "bg-navy-900 border-white/10" : "bg-white border-slate-200 shadow-sm")}>
-          <h2 className={cn("text-3xl font-black mb-8", isDark ? "text-white" : "text-slate-900")}>How to Use the NEPSE IPO Allotment Predictor</h2>
-          <div className={cn("space-y-6 text-lg leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
-            <p>
-              Using our NEPSE IPO Allotment Predictor is simple and designed to give you instant insights into your investment chances. To get started, navigate to the "Predictor" section from the menu. First, select the company you are interested in from the dropdown list. If the company is currently open for application or recently closed, our system will automatically fetch the latest oversubscription data if available.
-            </p>
-            <p>
-              Next, enter the number of Demat accounts you are using to apply for the IPO. Many families in Nepal apply through multiple accounts (e.g., self, spouse, children) to increase their collective probability. Our tool calculates the combined probability for all these accounts. After entering the details, click on the "Predict Now" button.
-            </p>
-            <p>
-              The algorithm will then process the data, comparing the total issued units against the estimated or actual number of applicants. You will receive a probability score (Low, Moderate, Good, or High) along with a fun comment and a prediction of how many units (kitta) you might receive. You can also download your prediction card or share it on Facebook to compare with your friends. Remember, this tool is for educational purposes and helps you understand the statistical side of the NEPSE lottery system.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* How IPO Allotment Works in Nepal */}
-      <section className="max-w-4xl mx-auto px-4 py-20">
-        <div className={cn("p-10 rounded-[3rem] border", isDark ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50 border-emerald-100")}>
-          <h2 className={cn("text-3xl font-black mb-8", isDark ? "text-white" : "text-slate-900")}>How IPO Allotment Works in Nepal</h2>
-          <div className={cn("space-y-6 text-lg leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>
-            <p>
-              In Nepal, the IPO allotment process is governed by the Securities Board of Nepal (SEBON) and executed by the Issue Manager through the C-ASBA system. For most retail IPOs, the "10 Kitta Policy" is followed. This means that every valid applicant is eligible to receive at least 10 shares if the issue is not heavily oversubscribed.
-            </p>
-            <p>
-              However, due to the massive number of investors (often over 2.5 million for a single issue), most IPOs become oversubscribed by many times. In such cases, a lottery system is used. The system randomly selects lucky winners who each receive 10 shares. The probability of being selected depends entirely on the ratio of available shares to the number of valid applicants. Our predictor tool uses this exact logic to give you a statistical estimate of your chances.
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 
@@ -746,17 +662,8 @@ export default function App() {
   }, []);
 
   return (
-    <HelmetProvider>
-      <Helmet>
-        <title>NEPSE IPO Allotment Predictor | Check Your IPO Probability</title>
-        <meta name="description" content="Predict your IPO allotment chances with high accuracy using our NEPSE IPO Allotment Predictor. Get live subscription data, expert insights, and market analysis." />
-        <meta name="keywords" content="NEPSE IPO Allotment Predictor, ipo allotment predictor nepal, nepse ipo result, ipo allotment probability, nepse stock market nepal, share market nepal, ipo result checker nepal" />
-        <meta name="author" content="NEPSE IPO Predictor Team" />
-        <link rel="canonical" href="https://ipoallotmentpredictor.vercel.app" />
-      </Helmet>
-      <ErrorBoundary isDark={isDark}>
-        <AppContent />
-      </ErrorBoundary>
-    </HelmetProvider>
+    <ErrorBoundary isDark={isDark}>
+      <AppContent />
+    </ErrorBoundary>
   );
 }

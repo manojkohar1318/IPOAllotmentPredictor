@@ -1,3 +1,10 @@
 User-agent: *
 Allow: /
-Sitemap: https://ais-dev-juqdc7qwq7yawob6ij2axa-289326504495.asia-east1.run.app/sitemap.xml
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://ipoallotmentpredictor.vercel.app/sitemap.xml

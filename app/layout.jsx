@@ -50,6 +50,9 @@ export default function RootLayout({ children }) {
           name="google-site-verification" 
           content="-48pKBHTI6NB5x2lRcbab5N9PWQbb8dqCHU5TmeYKAQ" 
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://placehold.co" />
       </head>
       <body className={`${inter.className} bg-navy-950 text-white min-h-screen flex flex-col`}>
         {children}
