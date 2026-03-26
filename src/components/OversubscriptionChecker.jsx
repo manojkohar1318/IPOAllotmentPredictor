@@ -144,7 +144,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
               onClick={handleRefresh}
               className={cn(
                 "w-full md:w-auto px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl transition-all flex items-center justify-center gap-2 font-bold text-xs md:text-sm shadow-sm",
-                isDark ? "bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600" : "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
+                isDark ? "bg-gray-700 hover:bg-gray-600 text-black-200 border border-gray-600" : "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
               )}
               title="Refresh Data"
             >
@@ -156,7 +156,7 @@ export const OversubscriptionChecker = ({ lang, isDark }) => {
           <div className="space-y-6 md:space-y-10">
             {/* IPO Selection Dropdown */}
             <div className="space-y-3 md:space-y-4">
-              <label className={cn("block text-[10px] md:text-xs font-black uppercase tracking-[0.2em] ml-2", isDark ? "text-gray-200" : "text-gray-700")}>
+              <label className={cn("block text-[10px] md:text-xs font-black uppercase tracking-[0.2em] ml-2", isDark ? "text-black-200" : "text-black-700")}>
                 {t.selectCompany || 'Select IPO'}
               </label>
               <div className="relative group">
